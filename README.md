@@ -1,3 +1,13 @@
+---
+title: FlyRates
+emoji: 💱
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # FlyRates - Telegram Exchange Rate Bot 💱
 
 FlyRates is a high-availability Telegram bot designed for real-time currency exchange rate monitoring. Built with an asynchronous architecture, it efficiently handles on-demand queries, automated subscription updates, and proactive threshold-based notifications.
