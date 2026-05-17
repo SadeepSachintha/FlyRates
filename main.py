@@ -6,7 +6,6 @@ from fastapi import FastAPI, Request, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from aiogram import Bot, Dispatcher, types
-from aiogram.client.session.aiohttp import AiohttpSession
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select, func
 
@@ -33,15 +32,8 @@ logger = logging.getLogger(__name__)
 # Global diagnostic results storage
 diagnostic_results = []
 
-# Custom AiohttpSession subclass to force IPv4 connection in order to bypass Hugging Face IPv6 connectivity bugs
-class IPv4AiohttpSession(AiohttpSession):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._connector_init["family"] = socket.AF_INET
-
-# Initialize Aiogram with forced IPv4 connector
-session = IPv4AiohttpSession()
-bot = Bot(token=settings.bot_token, session=session)
+# Initialize Aiogram Bot using standard session to leverage Hugging Face's NAT64 routing
+bot = Bot(token=settings.bot_token)
 dp = Dispatcher()
 dp.include_router(bot_router)
 
