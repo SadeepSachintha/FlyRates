@@ -14,6 +14,7 @@ if "supabase" in settings.database_url or "postgres" in settings.database_url or
     ssl_context.verify_mode = ssl.CERT_NONE
     connect_args["ssl"] = ssl_context
     connect_args["statement_cache_size"] = 0
+    connect_args["prepared_statement_cache_size"] = 0
 
 # Initialize the async engine
 engine = create_async_engine(
