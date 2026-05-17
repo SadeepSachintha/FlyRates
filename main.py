@@ -91,13 +91,16 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to register bot commands: {e}")
 
     # 3. Setup Webhook (if URL is provided)
-    if settings.webhook_url:
-        webhook_info = await bot.get_webhook_info()
-        if webhook_info.url != f"{settings.webhook_url}/webhook":
-            await bot.set_webhook(url=f"{settings.webhook_url}/webhook")
-            logger.info(f"Webhook set to {settings.webhook_url}/webhook")
-    else:
-        logger.warning("WEBHOOK_URL not set. Running in webhook mode requires a public URL.")
+    try:
+        if settings.webhook_url:
+            webhook_info = await bot.get_webhook_info()
+            if webhook_info.url != f"{settings.webhook_url}/webhook":
+                await bot.set_webhook(url=f"{settings.webhook_url}/webhook")
+                logger.info(f"Webhook set to {settings.webhook_url}/webhook")
+        else:
+            logger.warning("WEBHOOK_URL not set. Running in webhook mode requires a public URL.")
+    except Exception as e:
+        logger.error(f"Failed to setup Telegram webhook during startup: {e}")
 
     # 3. Setup Scheduled Jobs
     scheduler.add_job(process_thresholds, 'interval', minutes=10, args=[bot])
