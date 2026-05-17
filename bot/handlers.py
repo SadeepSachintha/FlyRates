@@ -35,11 +35,12 @@ async def cmd_start(message: types.Message):
 async def cmd_current(message: types.Message):
     """Fetches the current exchange rate."""
     args = message.text.split()[1:]
-    if len(args) != 2:
-        await message.answer("Usage: /current <base_currency> <target_currency>\nExample: /current USD EUR")
+    if len(args) not in [1, 2]:
+        await message.answer("Usage: <code>/current &lt;base&gt; [target]</code>\nExample: <code>/current USD</code> or <code>/current USD EUR</code>", parse_mode="HTML")
         return
 
-    base, target = args[0].upper(), args[1].upper()
+    base = args[0].upper()
+    target = args[1].upper() if len(args) == 2 else "LKR"
     rate = await fx_service.get_rate(base, target)
     
     if rate:
@@ -51,12 +52,25 @@ async def cmd_current(message: types.Message):
 async def cmd_subscribe(message: types.Message):
     """Subscribes the user to periodic updates."""
     args = message.text.split()[1:]
-    if len(args) not in [2, 3]:
-        await message.answer("Usage: /subscribe <base> <target> [daily|hourly]\nExample: /subscribe USD EUR daily")
+    if len(args) not in [1, 2, 3]:
+        await message.answer("Usage: <code>/subscribe &lt;base&gt; [target] [daily|hourly]</code>\nExample: <code>/subscribe USD daily</code>", parse_mode="HTML")
         return
 
-    base, target = args[0].upper(), args[1].upper()
-    freq = args[2].lower() if len(args) == 3 else "daily"
+    base = args[0].upper()
+    
+    if len(args) == 1:
+        target = "LKR"
+        freq = "daily"
+    elif len(args) == 2:
+        if args[1].lower() in ["daily", "hourly"]:
+            target = "LKR"
+            freq = args[1].lower()
+        else:
+            target = args[1].upper()
+            freq = "daily"
+    else:
+        target = args[1].upper()
+        freq = args[2].lower()
 
     if not fx_service.is_valid_currency(base) or not fx_service.is_valid_currency(target):
         await message.answer("❌ Invalid currency pair.")
@@ -78,11 +92,14 @@ async def cmd_subscribe(message: types.Message):
 async def cmd_threshold(message: types.Message):
     """Sets a threshold alert."""
     args = message.text.split()[1:]
-    if len(args) != 4:
-        await message.answer("Usage: /threshold <base> <target> <condition> <value>\nExample: /threshold USD EUR < 0.90")
+    if len(args) not in [3, 4]:
+        await message.answer("Usage: <code>/threshold &lt;base&gt; [target] &lt;condition&gt; &lt;value&gt;</code>\nExample: <code>/threshold USD &lt; 300</code>", parse_mode="HTML")
         return
 
-    base, target, condition, value_str = args[0].upper(), args[1].upper(), args[2], args[3]
+    if len(args) == 3:
+        base, target, condition, value_str = args[0].upper(), "LKR", args[1], args[2]
+    else:
+        base, target, condition, value_str = args[0].upper(), args[1].upper(), args[2], args[3]
     
     try:
         value = float(value_str)
@@ -121,36 +138,37 @@ async def cmd_mysubs(message: types.Message):
         thresholds_result = await session.execute(select(Threshold).where(Threshold.chat_id == chat_id))
         thresholds = thresholds_result.scalars().all()
         
-    response = "📋 **Your Active Settings**\n\n"
+    response = "📋 <b>Your Active Settings</b>\n\n"
     
     if subs:
-        response += "🔔 **Subscriptions:**\n"
+        response += "🔔 <b>Subscriptions:</b>\n"
         for sub in subs:
             response += f"• {sub.base_currency} to {sub.target_currency} ({sub.frequency})\n"
     else:
-        response += "🔔 **Subscriptions:** None\n"
+        response += "🔔 <b>Subscriptions:</b> None\n"
         
     response += "\n"
     
     if thresholds:
-        response += "🚨 **Thresholds:**\n"
+        response += "🚨 <b>Thresholds:</b>\n"
         for th in thresholds:
             status = " (Active)" if th.is_active else " (Triggered/Inactive)"
             response += f"• {th.base_currency} to {th.target_currency} {th.condition} {th.target_value}{status}\n"
     else:
-        response += "🚨 **Thresholds:** None\n"
+        response += "🚨 <b>Thresholds:</b> None\n"
         
-    await message.answer(response, parse_mode="Markdown")
+    await message.answer(response, parse_mode="HTML")
 
 @router.message(Command("unsubscribe"))
 async def cmd_unsubscribe(message: types.Message):
     """Removes a subscription."""
     args = message.text.split()[1:]
-    if len(args) != 2:
-        await message.answer("Usage: /unsubscribe <base> <target>\nExample: /unsubscribe USD EUR")
+    if len(args) not in [1, 2]:
+        await message.answer("Usage: <code>/unsubscribe &lt;base&gt; [target]</code>\nExample: <code>/unsubscribe USD</code>", parse_mode="HTML")
         return
 
-    base, target = args[0].upper(), args[1].upper()
+    base = args[0].upper()
+    target = args[1].upper() if len(args) == 2 else "LKR"
     chat_id = message.chat.id
 
     from db.session import async_session
@@ -176,11 +194,12 @@ async def cmd_unsubscribe(message: types.Message):
 async def cmd_delthreshold(message: types.Message):
     """Removes a threshold alert."""
     args = message.text.split()[1:]
-    if len(args) != 2:
-        await message.answer("Usage: /delthreshold <base> <target>\nExample: /delthreshold USD EUR")
+    if len(args) not in [1, 2]:
+        await message.answer("Usage: <code>/delthreshold &lt;base&gt; [target]</code>\nExample: <code>/delthreshold USD</code>", parse_mode="HTML")
         return
 
-    base, target = args[0].upper(), args[1].upper()
+    base = args[0].upper()
+    target = args[1].upper() if len(args) == 2 else "LKR"
     chat_id = message.chat.id
 
     from db.session import async_session
@@ -207,23 +226,23 @@ async def cmd_help(message: types.Message):
     """Shows detailed usage instructions."""
     currencies_str = ", ".join(ALLOWED_CURRENCIES)
     help_text = (
-        "📚 **FlyRates Bot Help** 📚\n\n"
+        "📚 <b>FlyRates Bot Help</b> 📚\n\n"
         "Here are the commands you can use:\n\n"
-        "**Basic Commands**\n"
-        "`/start` - Get welcome message\n"
-        "`/help` - Show this help menu\n\n"
-        "**Rates & Updates**\n"
-        "`/current <base> <target>` - Get the live rate\n"
-        "`/subscribe <base> <target> [daily/hourly]` - Automate updates\n"
-        "`/threshold <base> <target> <condition> <value>` - Get custom alerts (<, >, <=, >=)\n\n"
-        "**Management**\n"
-        "`/mysubs` - View all your active subscriptions and alerts\n"
-        "`/unsubscribe <base> <target>` - Remove a subscription\n"
-        "`/delthreshold <base> <target>` - Remove an alert\n\n"
-        f"**Supported Currencies:** {currencies_str}\n\n"
-        "**Examples:**\n"
-        "`/current USD EUR`\n"
-        "`/subscribe USD EUR hourly`\n"
-        "`/threshold USD EUR < 0.90`"
+        "<b>Basic Commands</b>\n"
+        "<code>/start</code> - Get welcome message\n"
+        "<code>/help</code> - Show this help menu\n\n"
+        "<b>Rates & Updates</b>\n"
+        "<code>/current &lt;base&gt; [target]</code> - Get the live rate\n"
+        "<code>/subscribe &lt;base&gt; [target] [daily/hourly]</code> - Automate updates\n"
+        "<code>/threshold &lt;base&gt; [target] &lt;condition&gt; &lt;value&gt;</code> - Get custom alerts (&lt;, &gt;, &lt;=, &gt;=)\n\n"
+        "<b>Management</b>\n"
+        "<code>/mysubs</code> - View all your active subscriptions and alerts\n"
+        "<code>/unsubscribe &lt;base&gt; [target]</code> - Remove a subscription\n"
+        "<code>/delthreshold &lt;base&gt; [target]</code> - Remove an alert\n\n"
+        f"<b>Supported Currencies:</b> {currencies_str}\n\n"
+        "<b>Examples:</b>\n"
+        "<code>/current USD</code> (defaults to LKR)\n"
+        "<code>/subscribe USD daily</code>\n"
+        "<code>/threshold USD &lt; 300</code>"
     )
-    await message.answer(help_text, parse_mode="Markdown")
+    await message.answer(help_text, parse_mode="HTML")

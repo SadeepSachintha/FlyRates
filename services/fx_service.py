@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 ALLOWED_CURRENCIES = {
     "USD", "GBP", "EUR", "AED", "SAR", 
-    "AUD", "INR", "JPY", "CNY", "QAR"
+    "AUD", "INR", "JPY", "CNY", "QAR", "LKR"
 }
 
 class FXService:
