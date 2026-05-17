@@ -20,6 +20,9 @@ from services.fx_service import fx_service
 logging.basicConfig(level=getattr(logging, settings.log_level))
 logger = logging.getLogger(__name__)
 
+# Global diagnostic results storage
+diagnostic_results = []
+
 # Custom AiohttpSession subclass to force IPv4 connection in order to bypass Hugging Face IPv6 connectivity bugs
 class IPv4AiohttpSession(AiohttpSession):
     def __init__(self, *args, **kwargs):
@@ -37,17 +40,16 @@ scheduler = AsyncIOScheduler()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 0. Connection Diagnostic
-    logger.info("--- STARTING NETWORK RESOLUTION & CONNECTION DIAGNOSTIC ---")
-    import aiohttp
+    global diagnostic_results
+    diagnostic_results.append("Starting resolution & connection diagnostics...")
     
     # Check DNS resolution
     for host in ["api.telegram.org", "v6.exchangerate-api.com"]:
         try:
             ips = socket.getaddrinfo(host, 443)
-            logger.info(f"DNS Resolution for {host}: {ips}")
+            diagnostic_results.append(f"DNS Resolution for {host}: {ips}")
         except Exception as e:
-            logger.error(f"DNS Resolution failed for {host}: {e}")
+            diagnostic_results.append(f"DNS Resolution failed for {host}: {type(e).__name__}: {e}")
             
     # Try different socket configurations
     configs = [
@@ -58,14 +60,15 @@ async def lifespan(app: FastAPI):
     
     for name, kwargs in configs:
         try:
-            logger.info(f"Attempting connection with configuration: {name}")
             connector = aiohttp.TCPConnector(**kwargs)
             async with aiohttp.ClientSession(connector=connector) as sess:
                 async with sess.get("https://api.telegram.org/bot8962490919:AAFtXUpwmYe8SrtkLjvsDFTntz2El9ckPs0/getMe", timeout=5) as r:
-                    logger.info(f"Configuration '{name}' SUCCESS: Status {r.status}, body: {await r.text()}")
+                    text = await r.text()
+                    diagnostic_results.append(f"Configuration '{name}' SUCCESS: Status {r.status}, body: {text}")
         except Exception as e:
-            logger.error(f"Configuration '{name}' FAILED: {type(e).__name__}: {e}")
-    logger.info("--- ENDING NETWORK RESOLUTION & CONNECTION DIAGNOSTIC ---")
+            diagnostic_results.append(f"Configuration '{name}' FAILED: {type(e).__name__}: {e}")
+            
+    diagnostic_results.append("Diagnostics finished.")
 
     # 1. Initialize Database
     await init_db()
@@ -118,6 +121,11 @@ async def telegram_webhook(request: Request):
     update = types.Update.model_validate(await request.json(), context={"bot": bot})
     await dp.feed_update(bot, update)
     return Response(status_code=200)
+
+@app.get("/api/diagnostics")
+async def get_diagnostics():
+    """Retrieve connection and network resolution diagnostic logs."""
+    return {"diagnostics": diagnostic_results}
 
 @app.get("/health")
 async def health_check():
