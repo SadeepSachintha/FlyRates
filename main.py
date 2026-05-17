@@ -1,5 +1,6 @@
 import logging
 import socket
+import aiohttp
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 from fastapi.staticfiles import StaticFiles
@@ -8,6 +9,15 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.client.session.aiohttp import AiohttpSession
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select, func
+
+# Monkeypatch socket.getaddrinfo to bypass DNS resolution blocks for api.telegram.org
+original_getaddrinfo = socket.getaddrinfo
+def custom_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    if host == "api.telegram.org":
+        # Map to Telegram Bot API direct IP
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('149.154.166.110', port))]
+    return original_getaddrinfo(host, port, family, type, proto, flags)
+socket.getaddrinfo = custom_getaddrinfo
 
 from core.config import settings
 from db.session import init_db, async_session
