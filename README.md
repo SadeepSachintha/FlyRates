@@ -83,5 +83,16 @@ docker run -p 8000:8000 --env-file .env flyrates-bot
 
 ## Hosting on Hugging Face Spaces 🤗
 
-This repository includes a GitHub Action (`.github/workflows/huggingface_sync.yml`) that automatically syncs the `main` branch to a Hugging Face Space.
+This repository includes a GitHub Actions workflow (`.github/workflows/huggingface_sync.yml`) that automatically syncs the `main` branch to a Hugging Face Space.
 Make sure to set the `HF_TOKEN` secret in your GitHub repository for the CI/CD pipeline to work correctly.
+
+### Hugging Face Deployment Optimizations ⚙️
+
+To ensure high-availability and 100% uptime within Hugging Face Spaces, the following environment optimizations are built into the core codebase:
+
+1. **Forced IPv4 Routing (Telegram API & FX Service):**
+   - **The Problem:** Hugging Face Spaces defaults to IPv6-first DNS/routing, but `api.telegram.org` is IPv4-only (it lacks `AAAA` records). Because the default fallback fails on the platform's networking stack, connections fail during startup with a `ClientConnectorError` (`Network is unreachable`).
+   - **The Solution:** The bot client uses a custom `IPv4AiohttpSession` subclass that injects `family=socket.AF_INET` into the underlying `aiohttp.TCPConnector`. A matching IPv4 constraint is configured on the `ClientSession` inside [services/fx_service.py](file:///d:/xampp/htdocs/FlyRates/services/fx_service.py). This bypasses the platform's IPv6 constraints for 100% successful external API routing.
+
+2. **Supabase Database Pooling:**
+   - When deploying with Supabase PostgreSQL, ensure you use the transaction-based connection pooler URL (PgBouncer) on **port 6543**. This prevents connection leakage/exhaustion from concurrent FastAPI server routing and scheduled background intervals.

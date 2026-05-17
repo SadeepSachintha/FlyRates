@@ -103,7 +103,7 @@ async def get_system_stats():
             # Gather subscriber (user) counts, subscriptions, and active thresholds
             users_count = await session.scalar(select(func.count(User.chat_id)))
             subs_count = await session.scalar(select(func.count(Subscription.id)))
-            thresholds_count = await session.scalar(select(func.count(Threshold.id).where(Threshold.is_active == True)))
+            thresholds_count = await session.scalar(select(func.count(Threshold.id)).where(Threshold.is_active == True))
             
             stats["subscribers"] = users_count or 0
             stats["active_subscriptions"] = subs_count or 0
