@@ -5,11 +5,16 @@ from db.models import Base
 
 logger = logging.getLogger(__name__)
 
+connect_args = {}
+if "supabase" in settings.database_url or "postgres" in settings.database_url:
+    connect_args["ssl"] = True
+
 # Initialize the async engine
 engine = create_async_engine(
     settings.database_url,
     echo=(settings.log_level == "DEBUG"),
     future=True,
+    connect_args=connect_args
 )
 
 # Create an async session factory

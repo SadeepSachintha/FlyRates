@@ -28,10 +28,7 @@ async def cmd_start(message: types.Message):
         f"Welcome to FlyRates! 🌍💸\n\n"
         f"I can track real-time exchange rates for you.\n"
         f"Supported Currencies: {currencies_str}\n\n"
-        f"Commands:\n"
-        f"/current <base> <target> - Get live rate (e.g., /current USD EUR)\n"
-        f"/subscribe <base> <target> <daily/hourly> - Get automated updates\n"
-        f"/threshold <base> <target> << or >> <value> - Get alerts (e.g., /threshold USD EUR < 0.90)"
+        f"Use /help to see all available commands!"
     )
 
 @router.message(Command("current"))
@@ -110,3 +107,123 @@ async def cmd_threshold(message: types.Message):
         await session.commit()
 
     await message.answer(f"✅ Alert set! I will notify you when 1 {base} {condition} {value} {target}.")
+
+@router.message(Command("mysubs"))
+async def cmd_mysubs(message: types.Message):
+    """Lists all active subscriptions and thresholds for the user."""
+    from db.session import async_session
+    chat_id = message.chat.id
+    
+    async with async_session() as session:
+        subs_result = await session.execute(select(Subscription).where(Subscription.chat_id == chat_id))
+        subs = subs_result.scalars().all()
+        
+        thresholds_result = await session.execute(select(Threshold).where(Threshold.chat_id == chat_id))
+        thresholds = thresholds_result.scalars().all()
+        
+    response = "📋 **Your Active Settings**\n\n"
+    
+    if subs:
+        response += "🔔 **Subscriptions:**\n"
+        for sub in subs:
+            response += f"• {sub.base_currency} to {sub.target_currency} ({sub.frequency})\n"
+    else:
+        response += "🔔 **Subscriptions:** None\n"
+        
+    response += "\n"
+    
+    if thresholds:
+        response += "🚨 **Thresholds:**\n"
+        for th in thresholds:
+            status = " (Active)" if th.is_active else " (Triggered/Inactive)"
+            response += f"• {th.base_currency} to {th.target_currency} {th.condition} {th.target_value}{status}\n"
+    else:
+        response += "🚨 **Thresholds:** None\n"
+        
+    await message.answer(response, parse_mode="Markdown")
+
+@router.message(Command("unsubscribe"))
+async def cmd_unsubscribe(message: types.Message):
+    """Removes a subscription."""
+    args = message.text.split()[1:]
+    if len(args) != 2:
+        await message.answer("Usage: /unsubscribe <base> <target>\nExample: /unsubscribe USD EUR")
+        return
+
+    base, target = args[0].upper(), args[1].upper()
+    chat_id = message.chat.id
+
+    from db.session import async_session
+    async with async_session() as session:
+        result = await session.execute(select(Subscription).where(
+            Subscription.chat_id == chat_id,
+            Subscription.base_currency == base,
+            Subscription.target_currency == target
+        ))
+        subs = result.scalars().all()
+        
+        if not subs:
+            await message.answer(f"❌ You don't have a subscription for {base} to {target}.")
+            return
+            
+        for sub in subs:
+            await session.delete(sub)
+        await session.commit()
+
+    await message.answer(f"✅ Unsubscribed from {base} to {target} updates.")
+
+@router.message(Command("delthreshold"))
+async def cmd_delthreshold(message: types.Message):
+    """Removes a threshold alert."""
+    args = message.text.split()[1:]
+    if len(args) != 2:
+        await message.answer("Usage: /delthreshold <base> <target>\nExample: /delthreshold USD EUR")
+        return
+
+    base, target = args[0].upper(), args[1].upper()
+    chat_id = message.chat.id
+
+    from db.session import async_session
+    async with async_session() as session:
+        result = await session.execute(select(Threshold).where(
+            Threshold.chat_id == chat_id,
+            Threshold.base_currency == base,
+            Threshold.target_currency == target
+        ))
+        thresholds = result.scalars().all()
+        
+        if not thresholds:
+            await message.answer(f"❌ You don't have a threshold alert for {base} to {target}.")
+            return
+            
+        for th in thresholds:
+            await session.delete(th)
+        await session.commit()
+
+    await message.answer(f"✅ Deleted threshold alerts for {base} to {target}.")
+
+@router.message(Command("help"))
+async def cmd_help(message: types.Message):
+    """Shows detailed usage instructions."""
+    currencies_str = ", ".join(ALLOWED_CURRENCIES)
+    help_text = (
+        "📚 **FlyRates Bot Help** 📚\n\n"
+        "Here are the commands you can use:\n\n"
+        "**Basic Commands**\n"
+        "`/start` - Get welcome message\n"
+        "`/help` - Show this help menu\n\n"
+        "**Rates & Updates**\n"
+        "`/current <base> <target>` - Get the live rate\n"
+        "`/subscribe <base> <target> [daily/hourly]` - Automate updates\n"
+        "`/threshold <base> <target> <condition> <value>` - Get custom alerts (<, >, <=, >=)\n\n"
+        "**Management**\n"
+        "`/mysubs` - View all your active subscriptions and alerts\n"
+        "`/unsubscribe <base> <target>` - Remove a subscription\n"
+        "`/delthreshold <base> <target>` - Remove an alert\n\n"
+        f"**Supported Currencies:** {currencies_str}\n\n"
+        "**Examples:**\n"
+        "`/current USD EUR`\n"
+        "`/subscribe USD EUR hourly`\n"
+        "`/threshold USD EUR < 0.90`"
+    )
+    await message.answer(help_text, parse_mode="Markdown")
