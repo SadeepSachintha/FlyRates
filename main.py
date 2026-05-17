@@ -1,9 +1,12 @@
 import logging
+import socket
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from aiogram import Bot, Dispatcher, types
+from aiogram.client.session.aiohttp import AiohttpSession
+from aiohttp import TCPConnector
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select, func
 
@@ -18,8 +21,9 @@ from services.fx_service import fx_service
 logging.basicConfig(level=getattr(logging, settings.log_level))
 logger = logging.getLogger(__name__)
 
-# Initialize Aiogram
-bot = Bot(token=settings.bot_token)
+# Initialize Aiogram with forced IPv4 connector to bypass Hugging Face IPv6 connectivity bugs
+session = AiohttpSession(connector=TCPConnector(family=socket.AF_INET))
+bot = Bot(token=settings.bot_token, session=session)
 dp = Dispatcher()
 dp.include_router(bot_router)
 
