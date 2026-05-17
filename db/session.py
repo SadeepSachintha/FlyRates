@@ -3,11 +3,16 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from core.config import settings
 from db.models import Base
 
+import ssl
+
 logger = logging.getLogger(__name__)
 
 connect_args = {}
 if "supabase" in settings.database_url or "postgres" in settings.database_url:
-    connect_args["ssl"] = True
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+    connect_args["ssl"] = ssl_context
 
 # Initialize the async engine
 engine = create_async_engine(
