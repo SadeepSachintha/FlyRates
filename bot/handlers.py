@@ -101,12 +101,16 @@ async def cmd_start(message: types.Message):
     # Create an async session explicitly since we're in a handler, not a FastAPI endpoint
     from db.session import async_session
     async with async_session() as session:
-        result = await session.execute(select(User).where(User.chat_id == chat_id))
-        user = result.scalar_one_or_none()
-        if not user:
-            new_user = User(chat_id=chat_id)
-            session.add(new_user)
-            await session.commit()
+        try:
+            result = await session.execute(select(User).where(User.chat_id == chat_id))
+            user = result.scalar_one_or_none()
+            if not user:
+                new_user = User(chat_id=chat_id)
+                session.add(new_user)
+                await session.commit()
+        except Exception as e:
+            logger.warning(f"Error or concurrent insert in cmd_start for {chat_id}: {e}")
+            await session.rollback()
             
     currencies_str = ", ".join(ALLOWED_CURRENCIES)
     await message.answer(

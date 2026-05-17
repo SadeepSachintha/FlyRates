@@ -85,7 +85,12 @@ async def lifespan(app: FastAPI):
     diagnostic_results.append("Diagnostics finished.")
 
     # 1. Initialize Database
-    await init_db()
+    try:
+        await init_db()
+        logger.info("Database initialized successfully.")
+    except Exception as e:
+        logger.error(f"CRITICAL: Failed to initialize database on startup. The database may be paused or unreachable: {e}")
+        diagnostic_results.append(f"DB Initialization FAILED: {type(e).__name__}: {e}")
 
     # Register Bot Menu Commands
     try:
@@ -104,7 +109,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to register bot commands: {e}")
 
-    # 3. Setup Webhook (if URL is provided)
+    # 3. Setup Webhook (if URL is provided) or Fallback to Polling
     try:
         if settings.webhook_url:
             webhook_info = await bot.get_webhook_info()
@@ -112,9 +117,12 @@ async def lifespan(app: FastAPI):
                 await bot.set_webhook(url=f"{settings.webhook_url}/webhook")
                 logger.info(f"Webhook set to {settings.webhook_url}/webhook")
         else:
-            logger.warning("WEBHOOK_URL not set. Running in webhook mode requires a public URL.")
+            logger.info("WEBHOOK_URL not set. Deleting webhook and starting Bot in Long Polling mode...")
+            await bot.delete_webhook(drop_pending_updates=False)
+            polling_task = asyncio.create_task(dp.start_polling(bot))
+            app.state.polling_task = polling_task
     except Exception as e:
-        logger.error(f"Failed to setup Telegram webhook during startup: {e}")
+        logger.error(f"Failed to setup Telegram interaction during startup: {e}")
 
     # 3. Setup Scheduled Jobs
     scheduler.add_job(process_thresholds, 'interval', minutes=10, args=[bot])
@@ -128,6 +136,13 @@ async def lifespan(app: FastAPI):
     scheduler.shutdown()
     if settings.webhook_url:
         await bot.delete_webhook()
+    else:
+        if hasattr(app.state, "polling_task"):
+            app.state.polling_task.cancel()
+            try:
+                await app.state.polling_task
+            except asyncio.CancelledError:
+                pass
     await bot.session.close()
 
 app = FastAPI(lifespan=lifespan)
