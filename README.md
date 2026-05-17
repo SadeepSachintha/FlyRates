@@ -21,6 +21,28 @@ FlyRates is a high-availability Telegram bot designed for real-time currency exc
 - **Scheduled Background Tasks:** Powered by APScheduler for reliable background task execution.
 - **Database Flexibility:** Uses SQLAlchemy (supports both SQLite and PostgreSQL).
 
+## Bot Commands & Premium UX 🤖📱
+
+FlyRates features a hybrid interface supporting both **instant CLI command typing** (for advanced users) and a **fully-guided visual wizard** (using buttons, emojis, and presets) when commands are typed without arguments.
+
+### Key UX Upgrades:
+- **Dynamic Autocomplete Menu:** Whenever you type `/` in the chat, Telegram pops up a visual list of all commands with clear descriptions.
+- **Visual Flag Emojis:** Country flags (e.g. `🇺🇸 USD`, `🇪🇺 EUR`, `🇱🇰 LKR`) are built into all menu buttons for effortless scanning.
+- **1-Tap Quick Presets:** Tapping a preset button (like `🇺🇸 USD ➡️ 🇱🇰 LKR`) instantly fetches rates or sets up alerts/subscriptions in a single click, completely bypassing selector grids!
+- **Settings Control Dashboard:** `/mysubs` opens a visual control panel showing your active configuration with single-tap deletion/addition shortcut buttons.
+
+### Command Reference:
+| Command | Type | Description / Usage Example |
+| :--- | :--- | :--- |
+| `/start` | Basic | Launch the bot, get the welcome menu, and register automatically. |
+| `/current` | Rate check | **Interactive:** Click buttons & presets with a `🔄 Refresh` button.<br>**Direct:** `/current USD EUR` |
+| `/subscribe` | Recurring | **Interactive:** Button selector for base, target, and daily/hourly updates.<br>**Direct:** `/subscribe USD EUR daily` |
+| `/unsubscribe` | Recurring | **Interactive:** Shows active subscriptions; click any `❌` button to delete.<br>**Direct:** `/unsubscribe USD EUR` |
+| `/threshold` | Alerts | **Interactive:** Choose currencies, select `<` or `>`, and type target rate when prompted.<br>**Direct:** `/threshold USD LKR < 310.5` |
+| `/delthreshold` | Alerts | **Interactive:** Lists your active thresholds; click any `❌` button to delete.<br>**Direct:** `/delthreshold USD LKR` |
+| `/mysubs` | Dashboard | Open your visual dashboard to view and manage all active settings. |
+| `/help` | Guide | Display a comprehensive guide with interactive examples. |
+
 ## Tech Stack 🛠️
 - **Web & API Framework:** [FastAPI](https://fastapi.tiangolo.com/)
 - **Telegram Bot API:** [Aiogram 3.x](https://aiogram.dev/)

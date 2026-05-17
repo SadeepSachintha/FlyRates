@@ -31,7 +31,24 @@ async def lifespan(app: FastAPI):
     # 1. Initialize Database
     await init_db()
 
-    # 2. Setup Webhook (if URL is provided)
+    # Register Bot Menu Commands
+    try:
+        commands = [
+            types.BotCommand(command="start", description="Start FlyRates & get welcome message"),
+            types.BotCommand(command="current", description="Check live exchange rate (interactive/direct)"),
+            types.BotCommand(command="subscribe", description="Set up periodic rate updates"),
+            types.BotCommand(command="threshold", description="Configure custom price alert"),
+            types.BotCommand(command="mysubs", description="View & manage active subscriptions/alerts"),
+            types.BotCommand(command="unsubscribe", description="Remove active subscription"),
+            types.BotCommand(command="delthreshold", description="Remove active threshold alert"),
+            types.BotCommand(command="help", description="Show detailed guide and examples")
+        ]
+        await bot.set_my_commands(commands)
+        logger.info("Bot commands registered successfully.")
+    except Exception as e:
+        logger.error(f"Failed to register bot commands: {e}")
+
+    # 3. Setup Webhook (if URL is provided)
     if settings.webhook_url:
         webhook_info = await bot.get_webhook_info()
         if webhook_info.url != f"{settings.webhook_url}/webhook":
