@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from aiogram import Bot, Dispatcher, types
 from aiogram.client.telegram import TelegramAPIServer
+from aiogram.client.session.aiohttp import AiohttpSession
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select, func
 
@@ -39,7 +40,8 @@ diagnostic_results = []
 # Initialize Aiogram Bot (with custom reverse proxy API server if configured)
 if settings.telegram_api_server:
     api_server = TelegramAPIServer.from_base(settings.telegram_api_server)
-    bot = Bot(token=settings.bot_token, api=api_server)
+    session = AiohttpSession(api=api_server)
+    bot = Bot(token=settings.bot_token, session=session)
     logger.info(f"Initialized Bot with custom API server: {settings.telegram_api_server}")
 else:
     bot = Bot(token=settings.bot_token)
