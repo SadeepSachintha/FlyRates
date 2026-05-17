@@ -37,6 +37,36 @@ scheduler = AsyncIOScheduler()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # 0. Connection Diagnostic
+    logger.info("--- STARTING NETWORK RESOLUTION & CONNECTION DIAGNOSTIC ---")
+    import aiohttp
+    
+    # Check DNS resolution
+    for host in ["api.telegram.org", "v6.exchangerate-api.com"]:
+        try:
+            ips = socket.getaddrinfo(host, 443)
+            logger.info(f"DNS Resolution for {host}: {ips}")
+        except Exception as e:
+            logger.error(f"DNS Resolution failed for {host}: {e}")
+            
+    # Try different socket configurations
+    configs = [
+        ("Default (No family forced)", {}),
+        ("Forced IPv4 (AF_INET)", {"family": socket.AF_INET}),
+        ("Forced IPv6 (AF_INET6)", {"family": socket.AF_INET6})
+    ]
+    
+    for name, kwargs in configs:
+        try:
+            logger.info(f"Attempting connection with configuration: {name}")
+            connector = aiohttp.TCPConnector(**kwargs)
+            async with aiohttp.ClientSession(connector=connector) as sess:
+                async with sess.get("https://api.telegram.org/bot8962490919:AAFtXUpwmYe8SrtkLjvsDFTntz2El9ckPs0/getMe", timeout=5) as r:
+                    logger.info(f"Configuration '{name}' SUCCESS: Status {r.status}, body: {await r.text()}")
+        except Exception as e:
+            logger.error(f"Configuration '{name}' FAILED: {type(e).__name__}: {e}")
+    logger.info("--- ENDING NETWORK RESOLUTION & CONNECTION DIAGNOSTIC ---")
+
     # 1. Initialize Database
     await init_db()
 
