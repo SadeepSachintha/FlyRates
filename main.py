@@ -58,7 +58,7 @@ async def lifespan(app: FastAPI):
     diagnostic_results.append("Starting resolution & connection diagnostics...")
     
     # Check DNS resolution
-    for host in ["api.telegram.org", "v6.exchangerate-api.com"]:
+    for host in ["api.telegram.org", "www.cbsl.gov.lk"]:
         try:
             ips = socket.getaddrinfo(host, 443)
             diagnostic_results.append(f"DNS Resolution for {host}: {ips}")

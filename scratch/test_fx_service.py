@@ -74,17 +74,8 @@ async def test_fx_service():
         print("    [Simulated Scraper Failure]")
         return False
     fx_service.fetch_cbsl_rates = broken_fetch
-    
-    # We will also temporarily unset API key and break ER-API call
-    original_api_key = fx_service.api_key
-    fx_service.api_key = "" # Unset key
-    original_fetch_api = fx_service.fetch_exchangerate_api
-    async def broken_api(base):
-        print("    [Simulated API Failure]")
-        return False
-    fx_service.fetch_exchangerate_api = broken_api
 
-    print("Cache is expired. External scrapers and APIs are simulated as down.")
+    print("Cache is expired. External scraper is simulated as down.")
     start_time = time.time()
     stale_rate = await fx_service.get_rate("USD", "LKR")
     elapsed = time.time() - start_time
@@ -94,8 +85,6 @@ async def test_fx_service():
 
     # Restore original methods
     fx_service.fetch_cbsl_rates = original_fetch
-    fx_service.api_key = original_api_key
-    fx_service.fetch_exchangerate_api = original_fetch_api
 
     print("==================================================")
     print("           ALL FXSERVICE TESTS PASSED!")

@@ -63,9 +63,6 @@ class CBSLTableParser(HTMLParser):
 
 class FXService:
     def __init__(self):
-        self.api_key = settings.fx_api_key
-        # Premium exchangerate-api URL
-        self.base_url = f"https://v6.exchangerate-api.com/v6/{self.api_key}"
         self.cache: Dict[str, Dict] = {}
         self.load_cache()
 
@@ -227,50 +224,6 @@ class FXService:
             logger.error(f"Global exception in fetch_cbsl_rates: {e}")
             return False
 
-    async def fetch_exchangerate_api(self, base_currency: str) -> bool:
-        """
-        Fetches latest exchange rates from ExchangeRate-API.
-        First tries the user's custom premium key. If rate-limited or fails, automatically
-        falls back to the free, key-less open endpoint (open.er-api.com).
-        """
-        base_currency = base_currency.upper()
-        connector = aiohttp.TCPConnector(family=socket.AF_INET)
-        
-        # 1. Custom premium key URL
-        premium_url = f"{self.base_url}/latest/{base_currency}"
-        # 2. Free open fallback URL
-        fallback_url = f"https://open.er-api.com/v6/latest/{base_currency}"
-        
-        endpoints = []
-        if self.api_key:
-            endpoints.append(("Premium Key", premium_url, "conversion_rates"))
-        endpoints.append(("Free Open Fallback", fallback_url, "rates"))
-        
-        async with aiohttp.ClientSession(connector=connector) as session:
-            for name, url, rates_key in endpoints:
-                logger.info(f"Fetching rates using {name} from {url}...")
-                try:
-                    async with session.get(url, timeout=10) as response:
-                        if response.status == 200:
-                            data = await response.json()
-                            rates = data.get(rates_key, {})
-                            if rates:
-                                logger.info(f"Successfully fetched {len(rates)} rates using {name} for base {base_currency}")
-                                for target, val in rates.items():
-                                    target = target.upper()
-                                    if target in ALLOWED_CURRENCIES:
-                                        self.update_cache_entry(base_currency, target, val)
-                                self.save_cache()
-                                return True
-                        elif response.status == 429:
-                            logger.error(f"{name} rate-limited! Status: 429 Too Many Requests.")
-                        else:
-                            logger.error(f"{name} returned error status: {response.status}")
-                except Exception as e:
-                    logger.error(f"Exception fetching {name} for base {base_currency}: {e}")
-                    
-        return False
-
     async def get_rate(self, base_currency: str, target_currency: str) -> Optional[float]:
         """
         Retrieves real-time exchange rate with support for in-memory caching,
@@ -304,29 +257,17 @@ class FXService:
                 return derived
 
         # 4. Cache MISS: Retrieve fresh rates.
-        #    If either base or target is LKR, attempt CBSL Scraper first (preferred, official, and completely free).
-        if base == "LKR" or target == "LKR":
-            logger.info(f"Cache miss for LKR conversion {base}->{target}. Launching CBSL Web Scraper...")
-            cbsl_success = await self.fetch_cbsl_rates()
-            if cbsl_success:
-                res = self.get_cached_rate(base, target)
-                if res is not None:
-                    return res
-
-        # 5. Fallback/Alternative: If CBSL failed or we need a non-LKR rate and bridge was not in cache,
-        #    fetch from ExchangeRate-API.
-        logger.info(f"Fetching from ExchangeRate-API for {base}...")
-        api_success = await self.fetch_exchangerate_api(base)
-        if api_success:
+        # Since we are fully using web scraping, any cache miss should trigger CBSL scraper.
+        # CBSL scraper fetches all rates (against LKR) and populates them into the cache.
+        logger.info(f"Cache miss for {base}->{target}. Launching CBSL Web Scraper...")
+        cbsl_success = await self.fetch_cbsl_rates()
+        if cbsl_success:
+            # Try to get rate directly from cache (if either is LKR)
             res = self.get_cached_rate(base, target)
             if res is not None:
                 return res
-
-        # 6. Still failed: Try CBSL if we haven't done it (for non-LKR pairs, we can fetch CBSL and try to bridge)
-        if base != "LKR" and target != "LKR":
-            logger.info("Attempting CBSL scrape as fallback to calculate cross rate...")
-            cbsl_success = await self.fetch_cbsl_rates()
-            if cbsl_success:
+            # Or try to derive cross rate mathematically if both are non-LKR
+            if base != "LKR" and target != "LKR":
                 base_lkr = self.get_cached_rate(base, "LKR")
                 target_lkr = self.get_cached_rate(target, "LKR")
                 if base_lkr is not None and target_lkr is not None and target_lkr > 0:
@@ -336,13 +277,24 @@ class FXService:
                     logger.info(f"Derived cross rate {base}->{target} after CBSL scrape: {derived}")
                     return derived
 
-        # 7. Total Failure: Fallback to stale/expired cached rate if it exists
+        # 5. Total Failure: Fallback to stale/expired cached rate if it exists
         logger.warning(f"All live FX sources failed for {base}->{target}. Attempting stale cache fallback...")
         stale_rate = self.get_stale_rate(base, target)
         if stale_rate is not None:
             return stale_rate
 
-        # 8. Absolute Failure: No rates available
+        # If we failed to get a direct stale rate, try to compute it from stale LKR rates
+        if base != "LKR" and target != "LKR":
+            base_lkr_stale = self.get_stale_rate(base, "LKR")
+            target_lkr_stale = self.get_stale_rate(target, "LKR")
+            if base_lkr_stale is not None and target_lkr_stale is not None and target_lkr_stale > 0:
+                derived = base_lkr_stale / target_lkr_stale
+                self.update_cache_entry(base, target, derived)
+                self.save_cache()
+                logger.warning(f"Derived stale cross rate {base}->{target} from stale LKR rates: {derived}")
+                return derived
+
+        # 6. Absolute Failure: No rates available
         logger.critical(f"No rates available in memory, disk, or APIs for {base}->{target}!")
         return None
 
