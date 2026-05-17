@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import socket
 import aiohttp
@@ -170,16 +171,21 @@ async def get_system_stats():
         stats["active_thresholds"] = 0
         stats["db_status"] = "error"
 
-    # Fetch live exchange rates to LKR
+    # Fetch live exchange rates to LKR concurrently
     rates = {}
     currencies = ["USD", "EUR", "GBP", "AUD", "JPY"]
-    for cur in currencies:
+    
+    async def fetch_rate_safe(cur: str):
         try:
-            rate = await fx_service.get_rate(cur, "LKR")
-            rates[cur] = rate or 0.0
+            val = await fx_service.get_rate(cur, "LKR")
+            return cur, val or 0.0
         except Exception as e:
             logger.error(f"Error fetching live rate for {cur}: {e}")
-            rates[cur] = 0.0
+            return cur, 0.0
+
+    results = await asyncio.gather(*(fetch_rate_safe(cur) for cur in currencies))
+    for cur, rate in results:
+        rates[cur] = rate
             
     stats["rates"] = rates
     stats["system_status"] = "online"
