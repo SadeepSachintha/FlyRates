@@ -1,0 +1,515 @@
+/* Core Design Settings */
+:root {
+    --bg-dark: #0B0F19;
+    --bg-card: rgba(17, 24, 39, 0.55);
+    --border-color: rgba(255, 255, 255, 0.07);
+    --border-hover: rgba(255, 255, 255, 0.15);
+    --text-primary: #F3F4F6;
+    --text-secondary: #9CA3AF;
+    
+    /* Neon Glow Accents */
+    --accent-cyan: #06B6D4;
+    --accent-purple: #8B5CF6;
+    --accent-green: #10B981;
+    --accent-pink: #EC4899;
+}
+
+/* Reset and Globals */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-dark);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--text-primary);
+    overflow-x: hidden;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* Background floating glow blobs */
+.glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(120px);
+    z-index: 0;
+    opacity: 0.18;
+}
+
+.glow-1 {
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, var(--accent-cyan), transparent);
+    top: -50px;
+    left: -100px;
+}
+
+.glow-2 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, var(--accent-purple), transparent);
+    bottom: -100px;
+    right: -100px;
+}
+
+/* Main Layout Wrapper */
+.app-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    min-height: 100vh;
+}
+
+/* Header styling */
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 2rem;
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.logo-icon {
+    font-size: 2rem;
+    color: transparent;
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+.logo-text h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+}
+
+.logo-text p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Glowing system status indicator */
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 30px;
+    border: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background-color: var(--accent-green);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--accent-green);
+    animation: pulse 1.8s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+/* Dashboard Grid Layout */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 2rem;
+}
+
+/* Left & Right side panels */
+.left-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.right-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Card General Glassmorphic Styles */
+.glass-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 2rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.3s;
+}
+
+.glass-card:hover {
+    border-color: var(--border-hover);
+}
+
+.card-header {
+    margin-bottom: 1.75rem;
+}
+
+.card-header h2 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.card-header h2 i {
+    color: var(--accent-cyan);
+}
+
+.card-header p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* Metrics Cards (3-column layout) */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.metric-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s;
+}
+
+.metric-card:hover {
+    transform: translateY(-4px);
+}
+
+.metric-card .card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+#metric-subscribers .card-icon {
+    background: rgba(6, 182, 212, 0.15);
+    color: var(--accent-cyan);
+}
+
+#metric-subs .card-icon {
+    background: rgba(139, 92, 246, 0.15);
+    color: var(--accent-purple);
+}
+
+#metric-thresholds .card-icon {
+    background: rgba(236, 72, 153, 0.15);
+    color: var(--accent-pink);
+}
+
+.card-info h3 {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.15rem;
+}
+
+.card-info .value {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+/* Quick Currency Converter Form */
+.converter-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.input-group label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-wrapper .prefix {
+    position: absolute;
+    left: 1.25rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.converter-form input,
+.converter-form select {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.85rem 1.25rem;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.converter-form input[type="number"] {
+    padding-left: 2.25rem;
+}
+
+.converter-form input:focus,
+.converter-form select:focus {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+}
+
+.converter-form select option {
+    background-color: #111827;
+    color: var(--text-primary);
+}
+
+/* Calculator Result Block */
+.conversion-result {
+    margin-top: 0.5rem;
+    background: rgba(6, 182, 212, 0.08);
+    border: 1px dashed rgba(6, 182, 212, 0.25);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.conversion-result .label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.conversion-result .result-value {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.85rem;
+    font-weight: 700;
+    color: var(--accent-cyan);
+}
+
+.conversion-result .currency-tag {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+/* Telegram Promo Card */
+.telegram-promotion {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(17, 24, 39, 0.8) 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.telegram-promotion::after {
+    content: '\f3fe';
+    font-family: 'Font Awesome 6 Brands';
+    position: absolute;
+    right: -20px;
+    bottom: -40px;
+    font-size: 10rem;
+    color: rgba(2, 132, 199, 0.05);
+    pointer-events: none;
+}
+
+.promo-content h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.promo-content p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1.75rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    outline: none;
+    border: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #0284C7, #0369A1);
+    color: white;
+    box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(2, 132, 199, 0.45);
+}
+
+/* Live Forex Rates List */
+.rates-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.rate-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.15rem 1.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    transition: background 0.25s, border-color 0.25s, transform 0.25s;
+}
+
+.rate-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--border-hover);
+    transform: translateX(4px);
+}
+
+.currency-info {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.currency-info .flag {
+    font-size: 2.25rem;
+    line-height: 1;
+}
+
+.currency-info .code {
+    display: block;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.currency-info .name {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.rate-value {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.rate-value .tag {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-left: 0.25rem;
+}
+
+/* Footer Styling */
+.app-footer {
+    text-align: center;
+    padding: 2rem 0;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: auto;
+}
+
+/* Responsive Rules */
+@media (max-width: 968px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+}
+
+@media (max-width: 580px) {
+    .main-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+        padding: 1.5rem;
+    }
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+}

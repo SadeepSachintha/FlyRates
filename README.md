@@ -13,6 +13,7 @@ pinned: false
 FlyRates is a high-availability Telegram bot designed for real-time currency exchange rate monitoring. Built with an asynchronous architecture, it efficiently handles on-demand queries, automated subscription updates, and proactive threshold-based notifications.
 
 ## Features ✨
+- **Premium Web Dashboard:** A stunning, glassmorphic UI displaying real-time LKR exchange rates, automated conversion calculator, database connection status, and user statistics.
 - **Real-Time Queries:** Get the latest exchange rates instantly.
 - **Subscriptions:** Subscribe to daily or hourly rate updates.
 - **Threshold Alerts:** Set custom threshold values and get notified when a currency hits your target rate.
@@ -21,11 +22,12 @@ FlyRates is a high-availability Telegram bot designed for real-time currency exc
 - **Database Flexibility:** Uses SQLAlchemy (supports both SQLite and PostgreSQL).
 
 ## Tech Stack 🛠️
-- **Web Framework:** [FastAPI](https://fastapi.tiangolo.com/)
+- **Web & API Framework:** [FastAPI](https://fastapi.tiangolo.com/)
 - **Telegram Bot API:** [Aiogram 3.x](https://aiogram.dev/)
-- **Database:** SQLAlchemy, aiosqlite, asyncpg
+- **Database:** SQLAlchemy, aiosqlite, asyncpg (Supabase PgBouncer optimized)
 - **Task Scheduling:** APScheduler
-- **Deployment:** Docker, Hugging Face Spaces
+- **Frontend Dashboard:** Premium Glassmorphic Web App (HTML5/Vanilla CSS/Modern JS)
+- **Deployment:** Docker, Hugging Face Spaces (24/7 Webhook & Scheduler)
 
 ## Environment Setup 🔧
 

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlyRates — Real-time Forex Bot Dashboard</title>
+    <meta name="description" content="Premium real-time analytics and exchange rates tracking dashboard for FlyRates Telegram Bot.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Background glows -->
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="logo-area">
+                <div class="logo-icon"><i class="fa-solid fa-money-bill-transfer"></i></div>
+                <div class="logo-text">
+                    <h1>FlyRates</h1>
+                    <p>Live Bot Analytics & exchange Rates</p>
+                </div>
+            </div>
+            <div class="status-indicator">
+                <span class="pulse-dot"></span>
+                <span id="system-status-text">Connecting...</span>
+            </div>
+        </header>
+
+        <!-- Main Dashboard Content -->
+        <main class="dashboard-grid">
+            <!-- Left Side: System Metrics & Converter -->
+            <section class="left-panel">
+                <!-- System Metrics Cards -->
+                <div class="metrics-grid">
+                    <div class="metric-card" id="metric-subscribers">
+                        <div class="card-icon"><i class="fa-solid fa-users"></i></div>
+                        <div class="card-info">
+                            <h3>Total Subscribers</h3>
+                            <div class="value" id="stats-subscribers">-</div>
+                        </div>
+                    </div>
+                    <div class="metric-card" id="metric-subs">
+                        <div class="card-icon"><i class="fa-solid fa-bell"></i></div>
+                        <div class="card-info">
+                            <h3>Active Subscriptions</h3>
+                            <div class="value" id="stats-subscriptions">-</div>
+                        </div>
+                    </div>
+                    <div class="metric-card" id="metric-thresholds">
+                        <div class="card-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <div class="card-info">
+                            <h3>Active Alerts</h3>
+                            <div class="value" id="stats-thresholds">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Currency Converter Widget -->
+                <div class="glass-card converter-card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-calculator"></i> Quick Currency Converter</h2>
+                        <p>Real-time conversion to Sri Lankan Rupee (LKR)</p>
+                    </div>
+                    <div class="converter-form">
+                        <div class="input-group">
+                            <label for="convert-amount">Amount</label>
+                            <div class="input-wrapper">
+                                <span class="prefix">$</span>
+                                <input type="number" id="convert-amount" value="1" min="1">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="convert-from">From Currency</label>
+                            <select id="convert-from">
+                                <option value="USD">USD - US Dollar</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="GBP">GBP - British Pound</option>
+                                <option value="AUD">AUD - Australian Dollar</option>
+                                <option value="JPY">JPY - Japanese Yen</option>
+                            </select>
+                        </div>
+                        <div class="conversion-result">
+                            <div class="label">Equivalent in LKR</div>
+                            <div class="result-value" id="conversion-output">0.00 <span class="currency-tag">LKR</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Telegram Promotion -->
+                <div class="glass-card telegram-promotion">
+                    <div class="promo-content">
+                        <h3>Get rate updates directly in Telegram!</h3>
+                        <p>Subscribe to automated updates and custom threshold alerts instantly.</p>
+                        <a href="https://t.me/FlyRatesBot" target="_blank" class="btn btn-primary">
+                            <i class="fa-brands fa-telegram"></i> Launch Telegram Bot
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Side: Live Rates Board -->
+            <section class="right-panel">
+                <div class="glass-card rates-card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-chart-line"></i> Live Exchange Rates (LKR)</h2>
+                        <p>Current value against 1 Sri Lankan Rupee (LKR)</p>
+                    </div>
+                    <div class="rates-list" id="rates-container">
+                        <!-- USD Card -->
+                        <div class="rate-row" id="rate-usd">
+                            <div class="currency-info">
+                                <div class="flag">🇺🇸</div>
+                                <div>
+                                    <span class="code">USD</span>
+                                    <span class="name">US Dollar</span>
+                                </div>
+                            </div>
+                            <div class="rate-value" id="val-usd">0.00 <span class="tag">LKR</span></div>
+                        </div>
+                        <!-- EUR Card -->
+                        <div class="rate-row" id="rate-eur">
+                            <div class="currency-info">
+                                <div class="flag">🇪🇺</div>
+                                <div>
+                                    <span class="code">EUR</span>
+                                    <span class="name">Euro</span>
+                                </div>
+                            </div>
+                            <div class="rate-value" id="val-eur">0.00 <span class="tag">LKR</span></div>
+                        </div>
+                        <!-- GBP Card -->
+                        <div class="rate-row" id="rate-gbp">
+                            <div class="currency-info">
+                                <div class="flag">🇬🇧</div>
+                                <div>
+                                    <span class="code">GBP</span>
+                                    <span class="name">British Pound</span>
+                                </div>
+                            </div>
+                            <div class="rate-value" id="val-gbp">0.00 <span class="tag">LKR</span></div>
+                        </div>
+                        <!-- AUD Card -->
+                        <div class="rate-row" id="rate-aud">
+                            <div class="currency-info">
+                                <div class="flag">🇦🇺</div>
+                                <div>
+                                    <span class="code">AUD</span>
+                                    <span class="name">Australian Dollar</span>
+                                </div>
+                            </div>
+                            <div class="rate-value" id="val-aud">0.00 <span class="tag">LKR</span></div>
+                        </div>
+                        <!-- JPY Card -->
+                        <div class="rate-row" id="rate-jpy">
+                            <div class="currency-info">
+                                <div class="flag">🇯🇵</div>
+                                <div>
+                                    <span class="code">JPY</span>
+                                    <span class="name">Japanese Yen</span>
+                                </div>
+                            </div>
+                            <div class="rate-value" id="val-jpy">0.00 <span class="tag">LKR</span></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>&copy; 2026 FlyRates System. Powered by FastAPI & Supabase. Fully high-availability.</p>
+        </footer>
+    </div>
+
+    <!-- Custom Logic Script -->
+    <script src="/static/app.js"></script>
+</body>
+</html>

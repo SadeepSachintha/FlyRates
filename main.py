@@ -1,13 +1,18 @@
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from aiogram import Bot, Dispatcher, types
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from sqlalchemy import select, func
 
 from core.config import settings
-from db.session import init_db
+from db.session import init_db, async_session
+from db.models import User, Subscription, Threshold
 from bot.handlers import router as bot_router
 from bot.scheduler import process_subscriptions, process_thresholds
+from services.fx_service import fx_service
 
 # Configure Logging
 logging.basicConfig(level=getattr(logging, settings.log_level))
@@ -62,3 +67,50 @@ async def telegram_webhook(request: Request):
 async def health_check():
     """Health check endpoint required by Hugging Face Spaces."""
     return {"status": "ok"}
+
+@app.get("/api/stats")
+async def get_system_stats():
+    """Retrieve database metrics and live LKR exchange rates."""
+    stats = {}
+    try:
+        async with async_session() as session:
+            # Gather subscriber (user) counts, subscriptions, and active thresholds
+            users_count = await session.scalar(select(func.count(User.chat_id)))
+            subs_count = await session.scalar(select(func.count(Subscription.id)))
+            thresholds_count = await session.scalar(select(func.count(Threshold.id).where(Threshold.is_active == True)))
+            
+            stats["subscribers"] = users_count or 0
+            stats["active_subscriptions"] = subs_count or 0
+            stats["active_thresholds"] = thresholds_count or 0
+            stats["db_status"] = "connected"
+    except Exception as e:
+        logger.error(f"Error fetching stats from DB: {e}")
+        stats["subscribers"] = 0
+        stats["active_subscriptions"] = 0
+        stats["active_thresholds"] = 0
+        stats["db_status"] = "error"
+
+    # Fetch live exchange rates to LKR
+    rates = {}
+    currencies = ["USD", "EUR", "GBP", "AUD", "JPY"]
+    for cur in currencies:
+        try:
+            rate = await fx_service.get_rate(cur, "LKR")
+            rates[cur] = rate or 0.0
+        except Exception as e:
+            logger.error(f"Error fetching live rate for {cur}: {e}")
+            rates[cur] = 0.0
+            
+    stats["rates"] = rates
+    stats["system_status"] = "online"
+    
+    return stats
+
+# Serve static dashboard
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/")
+async def get_dashboard():
+    """Serves the premium dashboard index file."""
+    return FileResponse("static/index.html")
+
