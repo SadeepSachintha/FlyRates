@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 async def test():
     try:
-        engine = create_async_engine('postgresql+asyncpg://postgres.crysvmpozojurmskepyy:%21AT5%2C%238Phrs%2B6%216@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres')
+        engine = create_async_engine('postgresql+asyncpg://postgres.crysvmpozojurmskepyy:%21AT5%2C%238Phrs%2B6%216@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres')
         async with engine.begin() as conn:
             print("CONNECTION SUCCESSFUL")
     except Exception as e:
