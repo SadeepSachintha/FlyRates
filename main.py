@@ -13,8 +13,11 @@ from sqlalchemy import select, func
 original_getaddrinfo = socket.getaddrinfo
 def custom_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
     if host == "api.telegram.org":
-        # Map to Telegram Bot API direct IP
-        return [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('149.154.166.110', port))]
+        # Map to Telegram Bot API native IPv6 and IPv4 IPs
+        return [
+            (socket.AF_INET6, socket.SOCK_STREAM, 6, '', ('2001:67c:4e8:f004::9', port, 0, 0)),
+            (socket.AF_INET, socket.SOCK_STREAM, 6, '', ('149.154.166.110', port))
+        ]
     return original_getaddrinfo(host, port, family, type, proto, flags)
 socket.getaddrinfo = custom_getaddrinfo
 
