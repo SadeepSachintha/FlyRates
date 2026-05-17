@@ -157,7 +157,18 @@ async def telegram_webhook(request: Request):
 @app.get("/api/diagnostics")
 async def get_diagnostics():
     """Retrieve connection and network resolution diagnostic logs."""
-    return {"diagnostics": diagnostic_results}
+    import os
+    env_info = {
+        "DATABASE_URL_set": bool(os.getenv("DATABASE_URL")),
+        "WEBHOOK_URL_val": os.getenv("WEBHOOK_URL"),
+        "TELEGRAM_API_SERVER_val": os.getenv("TELEGRAM_API_SERVER"),
+        "BOT_TOKEN_set": bool(os.getenv("BOT_TOKEN")),
+        "FX_API_KEY_set": bool(os.getenv("FX_API_KEY"))
+    }
+    return {
+        "diagnostics": diagnostic_results,
+        "env_info": env_info
+    }
 
 @app.get("/health")
 async def health_check():
