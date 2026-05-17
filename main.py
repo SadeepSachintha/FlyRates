@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from aiogram import Bot, Dispatcher, types
+from aiogram.client.telegram import TelegramAPIServer
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select, func
 
@@ -35,8 +36,13 @@ logger = logging.getLogger(__name__)
 # Global diagnostic results storage
 diagnostic_results = []
 
-# Initialize Aiogram Bot using standard session to leverage Hugging Face's NAT64 routing
-bot = Bot(token=settings.bot_token)
+# Initialize Aiogram Bot (with custom reverse proxy API server if configured)
+if settings.telegram_api_server:
+    api_server = TelegramAPIServer.from_base(settings.telegram_api_server)
+    bot = Bot(token=settings.bot_token, api=api_server)
+    logger.info(f"Initialized Bot with custom API server: {settings.telegram_api_server}")
+else:
+    bot = Bot(token=settings.bot_token)
 dp = Dispatcher()
 dp.include_router(bot_router)
 

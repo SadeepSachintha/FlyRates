@@ -5,6 +5,7 @@ from typing import Optional
 class Settings(BaseSettings):
     bot_token: str = ""
     webhook_url: Optional[str] = None
+    telegram_api_server: Optional[str] = None
     fx_api_key: str = ""
     database_url: str = "sqlite+aiosqlite:///./flyrates.db"
     log_level: str = "INFO"
