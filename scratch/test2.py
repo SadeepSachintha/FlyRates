@@ -1,5 +1,6 @@
 import asyncio
 import aiohttp
+from core.config import settings
 
 async def main():
     async with aiohttp.ClientSession() as s:
@@ -24,7 +25,7 @@ async def main():
             "`/threshold USD EUR < 0.90`"
         )
         async with s.post(
-            'https://api.telegram.org/bot8962490919:AAFtXUpwmYe8SrtkLjvsDFTntz2El9ckPs0/sendMessage', 
+            f'https://api.telegram.org/bot{settings.bot_token}/sendMessage', 
             json={
                 'chat_id': '@durov', 
                 'text': help_text, 

@@ -3,9 +3,10 @@ from fastapi import FastAPI, Request
 from aiogram import Bot, Dispatcher, types
 import uvicorn
 from bot.handlers import router as bot_router
+from core.config import settings
 
 app = FastAPI()
-bot = Bot(token="8962490919:AAFtXUpwmYe8SrtkLjvsDFTntz2El9ckPs0")
+bot = Bot(token=settings.bot_token)
 dp = Dispatcher()
 dp.include_router(bot_router)
 

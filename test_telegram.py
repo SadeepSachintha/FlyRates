@@ -1,6 +1,7 @@
 import requests
+from core.config import settings
 
-TOKEN = "8962490919:AAFtXUpwmYe8SrtkLjvsDFTntz2El9ckPs0"
+TOKEN = settings.bot_token
 CHAT_ID = "1234567"
 
 help_text = (

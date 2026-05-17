@@ -76,7 +76,7 @@ async def lifespan(app: FastAPI):
         try:
             connector = aiohttp.TCPConnector(**kwargs)
             async with aiohttp.ClientSession(connector=connector) as sess:
-                async with sess.get("https://api.telegram.org/bot8962490919:AAFtXUpwmYe8SrtkLjvsDFTntz2El9ckPs0/getMe", timeout=5) as r:
+                async with sess.get(f"https://api.telegram.org/bot{settings.bot_token}/getMe", timeout=5) as r:
                     text = await r.text()
                     diagnostic_results.append(f"Configuration '{name}' SUCCESS: Status {r.status}, body: {text}")
         except Exception as e:
