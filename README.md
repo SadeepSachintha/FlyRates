@@ -10,16 +10,16 @@ pinned: false
 
 # FlyRates - Telegram Exchange Rate Bot 💱
 
-FlyRates is a high-availability Telegram bot designed for real-time currency exchange rate monitoring. Built with an asynchronous architecture, it efficiently handles on-demand queries, automated subscription updates, and proactive threshold-based notifications.
+FlyRates is an ultra-clean, high-availability Telegram bot designed for single-purpose, highly reliable daily currency exchange rate updates against the Sri Lankan Rupee (LKR). Built with a state-free, asynchronous architecture, it efficiently handles on-demand queries, automated daily list broadcasts, and premium web analytics.
 
 ## Features ✨
-- **Premium Web Dashboard:** A stunning, glassmorphic UI displaying real-time LKR exchange rates, automated conversion calculator, database connection status, and user statistics.
-- **Real-Time Queries:** Get the latest exchange rates instantly.
-- **Subscriptions:** Subscribe to daily or hourly rate updates.
-- **Threshold Alerts:** Set custom threshold values and get notified when a currency hits your target rate.
+- **Premium Glassmorphic Web Dashboard:** A stunning, glassmorphic UI displaying real-time LKR exchange rates, automated conversion calculator, and active scheduler metrics.
+- **Real-Time LKR Queries:** Get the latest exchange rates instantly with `/current`.
+- **Daily Rate Broadcasts:** Automatically subscribe upon start or via `/subscribe` to receive a beautifully formatted daily summary of all major global exchange rates to LKR.
+- **1-Tap Rate Refresh:** Tapping the inline `🔄 Refresh Rates` button updates the exchange list in-place instantly.
 - **Asynchronous Architecture:** High performance and non-blocking I/O using FastAPI and Aiogram.
-- **Scheduled Background Tasks:** Powered by APScheduler for reliable background task execution.
-- **Database Flexibility:** Uses SQLAlchemy (supports both SQLite and PostgreSQL).
+- **Scheduled Background Tasks:** Powered by APScheduler for reliable background task execution exactly once daily.
+- **Database Flexibility:** Uses SQLAlchemy (supports SQLite locally and high-performance PgBouncer-pooled Supabase PostgreSQL in production) with a single-table `users` schema.
 
 ## Key-less Web-Scraping FX Service & CBSL Web Scraper 💱
 
@@ -51,33 +51,28 @@ To permanently resolve external API rate-limiting errors (`status 429`) and guar
 
 ## Bot Commands & Premium UX 🤖📱
 
-FlyRates features a hybrid interface supporting both **instant CLI command typing** (for advanced users) and a **fully-guided visual wizard** (using buttons, emojis, and presets) when commands are typed without arguments.
-
-### Key UX Upgrades:
-- **Dynamic Autocomplete Menu:** Whenever you type `/` in the chat, Telegram pops up a visual list of all commands with clear descriptions.
-- **Visual Flag Emojis:** Country flags (e.g. `🇺🇸 USD`, `🇪🇺 EUR`, `🇱🇰 LKR`) are built into all menu buttons for effortless scanning.
-- **1-Tap Quick Presets:** Tapping a preset button (like `🇺🇸 USD ➡️ 🇱🇰 LKR`) instantly fetches rates or sets up alerts/subscriptions in a single click, completely bypassing selector grids!
-- **Settings Control Dashboard:** `/mysubs` opens a visual control panel showing your active configuration with single-tap deletion/addition shortcut buttons.
+FlyRates features an intuitive, zero-maintenance command suite supporting direct user subscription management and visual rate checklists.
 
 ### Command Reference:
 | Command | Type | Description / Usage Example |
 | :--- | :--- | :--- |
-| `/start` | Basic | Launch the bot, get the welcome menu, and register automatically. |
-| `/current` | Rate check | **Interactive:** Click buttons & presets with a `🔄 Refresh` button.<br>**Direct:** `/current USD EUR` |
-| `/subscribe` | Recurring | **Interactive:** Button selector for base, target, and daily/hourly updates.<br>**Direct:** `/subscribe USD EUR daily` |
-| `/unsubscribe` | Recurring | **Interactive:** Shows active subscriptions; click any `❌` button to delete.<br>**Direct:** `/unsubscribe USD EUR` |
-| `/threshold` | Alerts | **Interactive:** Choose currencies, select `<` or `>`, and type target rate when prompted.<br>**Direct:** `/threshold USD LKR < 310.5` |
-| `/delthreshold` | Alerts | **Interactive:** Lists your active thresholds; click any `❌` button to delete.<br>**Direct:** `/delthreshold USD LKR` |
-| `/mysubs` | Dashboard | Open your visual dashboard to view and manage all active settings. |
-| `/help` | Guide | Display a comprehensive guide with interactive examples. |
+| `/start` | Basic | Launch the bot, get the welcome menu, and register for daily updates automatically. |
+| `/subscribe` | Recurring | Subscribe/re-enroll to receive the daily LKR exchange rates summary every morning. |
+| `/current` | Rate check | Instantly displays the complete list of 10 currencies to LKR with a functional inline `🔄 Refresh Rates` callback. |
+| `/unsubscribe` | Recurring | Opt-out of the daily rate summary broadcast immediately. |
+| `/help` | Guide | Display a comprehensive help manual. |
+
+---
 
 ## Tech Stack 🛠️
 - **Web & API Framework:** [FastAPI](https://fastapi.tiangolo.com/)
 - **Telegram Bot API:** [Aiogram 3.x](https://aiogram.dev/)
 - **Database:** SQLAlchemy, aiosqlite, asyncpg (Supabase PgBouncer optimized)
-- **Task Scheduling:** APScheduler
+- **Task Scheduling:** APScheduler (Configured for exactly one daily broadcast at 8:00 AM)
 - **Frontend Dashboard:** Premium Glassmorphic Web App (HTML5/Vanilla CSS/Modern JS)
 - **Deployment:** Docker, Hugging Face Spaces (24/7 Webhook & Scheduler)
+
+---
 
 ## Environment Setup 🔧
 
@@ -120,7 +115,7 @@ To ensure high-availability, zero-maintenance, and 100% uptime within Hugging Fa
 
 1. **Forced IPv4 Routing (Telegram API & FX Service):**
    - **The Problem:** Hugging Face Spaces defaults to IPv6-first DNS/routing, but `api.telegram.org` is IPv4-only (it lacks `AAAA` records). Because the default fallback fails on the platform's networking stack, connections fail during startup with a `ClientConnectorError` (`Network is unreachable`).
-   - **The Solution:** The bot client uses a custom `IPv4AiohttpSession` subclass that injects `family=socket.AF_INET` into the underlying `aiohttp.TCPConnector`. A matching IPv4 constraint is configured on the `ClientSession` inside [services/fx_service.py](file:///d:/xampp/htdocs/FlyRates/services/fx_service.py). This bypasses the platform's IPv6 constraints for 100% successful external API routing.
+   - **The Solution:** The bot client uses a custom `IPv4AiohttpSession` subclass that injects `family=socket.AF_INET` into the underlying `aiohttp.TCPConnector`. A matching IPv4 constraint is configured on the `ClientSession` inside `fx_service.py`. This bypasses the platform's IPv6 constraints for 100% successful external API routing.
 
 2. **Supabase Database PgBouncer Transaction Pooling Compatibility:**
    - **The Problem:** Connecting to Supabase's transaction pooler (PgBouncer on port `6543`) with SQLAlchemy/asyncpg can throw `DuplicatePreparedStatementError` or `InvalidSQLStatementNameError` because PgBouncer does not support reusing session-based prepared statement caches.
