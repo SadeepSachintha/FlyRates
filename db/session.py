@@ -22,7 +22,8 @@ engine = create_async_engine(
     echo=(settings.log_level == "DEBUG"),
     future=True,
     pool_pre_ping=True,
-    connect_args=connect_args
+    connect_args=connect_args,
+    prepared_statement_cache_size=0
 )
 
 # Create an async session factory
