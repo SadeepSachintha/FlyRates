@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom Style Sheet -->
     <link rel="stylesheet" href="/static/style.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <!-- Background glows -->
@@ -86,6 +88,11 @@
                                 <option value="GBP">GBP - British Pound</option>
                                 <option value="AUD">AUD - Australian Dollar</option>
                                 <option value="JPY">JPY - Japanese Yen</option>
+                                <option value="AED">AED - UAE Dirham</option>
+                                <option value="SAR">SAR - Saudi Riyal</option>
+                                <option value="INR">INR - Indian Rupee</option>
+                                <option value="CNY">CNY - Chinese Yuan</option>
+                                <option value="QAR">QAR - Qatari Riyal</option>
                             </select>
                         </div>
                         <div class="conversion-result">
@@ -170,10 +177,99 @@
                             </div>
                             <div class="rate-value" id="val-jpy">0.00 <span class="tag">LKR</span></div>
                         </div>
+                        <!-- AED Card -->
+                        <div class="rate-row" id="rate-aed">
+                            <div class="currency-info">
+                                <div class="flag">🇦🇪</div>
+                                <div>
+                                    <span class="code">AED</span>
+                                    <span class="name">UAE Dirham</span>
+                                </div>
+                            </div>
+                            <div class="rate-value" id="val-aed">0.00 <span class="tag">LKR</span></div>
+                        </div>
+                        <!-- SAR Card -->
+                        <div class="rate-row" id="rate-sar">
+                            <div class="currency-info">
+                                <div class="flag">🇸🇦</div>
+                                <div>
+                                    <span class="code">SAR</span>
+                                    <span class="name">Saudi Arabian Riyal</span>
+                                </div>
+                            </div>
+                            <div class="rate-value" id="val-sar">0.00 <span class="tag">LKR</span></div>
+                        </div>
+                        <!-- INR Card -->
+                        <div class="rate-row" id="rate-inr">
+                            <div class="currency-info">
+                                <div class="flag">🇮🇳</div>
+                                <div>
+                                    <span class="code">INR</span>
+                                    <span class="name">Indian Rupee</span>
+                                </div>
+                            </div>
+                            <div class="rate-value" id="val-inr">0.00 <span class="tag">LKR</span></div>
+                        </div>
+                        <!-- CNY Card -->
+                        <div class="rate-row" id="rate-cny">
+                            <div class="currency-info">
+                                <div class="flag">🇨🇳</div>
+                                <div>
+                                    <span class="code">CNY</span>
+                                    <span class="name">Chinese Yuan</span>
+                                </div>
+                            </div>
+                            <div class="rate-value" id="val-cny">0.00 <span class="tag">LKR</span></div>
+                        </div>
+                        <!-- QAR Card -->
+                        <div class="rate-row" id="rate-qar">
+                            <div class="currency-info">
+                                <div class="flag">🇶🇦</div>
+                                <div>
+                                    <span class="code">QAR</span>
+                                    <span class="name">Qatar Riyal</span>
+                                </div>
+                            </div>
+                            <div class="rate-value" id="val-qar">0.00 <span class="tag">LKR</span></div>
+                        </div>
                     </div>
                 </div>
             </section>
         </main>
+
+        <!-- Historical Trends Section -->
+        <section class="trend-section">
+            <div class="glass-card trend-chart-card">
+                <div class="card-header chart-header-row">
+                    <div>
+                        <h2><i class="fa-solid fa-chart-area"></i> LKR Exchange Rate Trends</h2>
+                        <p>Historical exchange rates performance against 1 Sri Lankan Rupee (LKR)</p>
+                    </div>
+                    <div class="chart-controls">
+                        <select id="chart-currency-select" class="chart-select">
+                            <option value="USD">USD - US Dollar</option>
+                            <option value="EUR">EUR - Euro</option>
+                            <option value="GBP">GBP - British Pound</option>
+                            <option value="AUD">AUD - Australian Dollar</option>
+                            <option value="JPY">JPY - Japanese Yen</option>
+                            <option value="AED">AED - UAE Dirham</option>
+                            <option value="SAR">SAR - Saudi Riyal</option>
+                            <option value="INR">INR - Indian Rupee</option>
+                            <option value="CNY">CNY - Chinese Yuan</option>
+                            <option value="QAR">QAR - Qatari Riyal</option>
+                        </select>
+                        <select id="chart-days-select" class="chart-select">
+                            <option value="7">Last 7 Days</option>
+                            <option value="15">Last 15 Days</option>
+                            <option value="30" selected>Last 30 Days</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-container" style="position: relative; height: 350px; width: 100%;">
+                    <canvas id="trends-chart"></canvas>
+                </div>
+            </div>
+        </section>
 
         <!-- Footer -->
         <footer class="app-footer">

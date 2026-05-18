@@ -160,9 +160,133 @@ async def cmd_help(message: types.Message):
         "• /subscribe - Subscribe to daily rate list updates\n"
         "• /unsubscribe - Opt-out of daily rate updates\n"
         "• /current - Retrieve the live exchange rates list instantly\n"
+        "• /history - View weekly trends with beautiful visual sparklines\n"
         "• /help - Display this help manual\n\n"
         "🌍 <b>Supported Currencies:</b>\n"
         "USD, EUR, GBP, AUD, JPY, AED, SAR, INR, CNY, QAR\n\n"
         "🔄 <i>All rates are pulled live from the official Central Bank of Sri Lanka (CBSL).</i>"
     )
     await message.answer(text, parse_mode="HTML")
+
+# --- WEEKLY HISTORICAL TRENDS & SPARKLINE SUPPORT ---
+
+def generate_sparkline(values: list) -> str:
+    """Generates a beautiful Unicode-based sparkline trend graph."""
+    if not values:
+        return ""
+    minimum = min(values)
+    maximum = max(values)
+    rng = maximum - minimum
+    if rng == 0:
+        return "▆" * len(values)
+    spark_chars = " ▂▃▄▅▆▇█"
+    sparkline = []
+    for v in values:
+        idx = int((v - minimum) / rng * (len(spark_chars) - 1))
+        sparkline.append(spark_chars[idx])
+    return "".join(sparkline)
+
+def get_history_keyboard():
+    """Generates the inline keyboard for choosing a currency to view historical trends."""
+    builder = InlineKeyboardBuilder()
+    for cur in CURRENCIES:
+        flag = FLAGS.get(cur, "💱")
+        builder.button(text=f"{flag} {cur}", callback_data=f"hist_{cur}")
+    builder.adjust(2)
+    return builder.as_markup()
+
+async def get_formatted_history(currency: str) -> str:
+    """Queries history for a currency and formats a beautiful Telegram message with a sparkline."""
+    from db.models import ExchangeRateHistory
+    from sqlalchemy import select
+    
+    cur = currency.upper()
+    async with async_session() as session:
+        result = await session.execute(
+            select(ExchangeRateHistory)
+            .where(ExchangeRateHistory.currency == cur)
+            .order_by(ExchangeRateHistory.timestamp.asc())
+        )
+        records = result.scalars().all()
+        
+        # Take last 7 records for weekly trend
+        records = records[-7:]
+        if not records:
+            return f"⚠️ <b>No historical data available for {cur} yet.</b>\n\n💡 Try again after a daily rate update has occurred."
+            
+        initial_rate = records[0].rate_to_lkr
+        latest_rate = records[-1].rate_to_lkr
+        diff = latest_rate - initial_rate
+        pct_change = (diff / initial_rate) * 100 if initial_rate > 0 else 0
+        
+        # Sparkline
+        rates_list = [r.rate_to_lkr for r in records]
+        sparkline = generate_sparkline(rates_list)
+        
+        flag = FLAGS.get(cur, "💱")
+        direction_emoji = "📈" if diff >= 0 else "📉"
+        trend_sign = "+" if diff >= 0 else ""
+        
+        lines = [
+            f"{flag} <b>{cur} to LKR 7-Day Trend</b> {direction_emoji}",
+            f"📅 <i>As of: {records[-1].timestamp.strftime('%Y-%m-%d')}</i>",
+            "",
+            f"📊 Sparkline: <code>[{sparkline}]</code>",
+            "",
+            "<b>Historical Rates:</b>"
+        ]
+        
+        for r in records:
+            dt_str = r.timestamp.strftime("%Y-%m-%d")
+            lines.append(f"• {dt_str}: <b>{r.rate_to_lkr:.2f}</b> LKR")
+            
+        lines.extend([
+            "",
+            f"💵 Latest Rate: <b>{latest_rate:.2f} LKR</b>",
+            f"🔄 7-day Change: <b>{trend_sign}{pct_change:.2f}% ({trend_sign}{diff:.2f} LKR)</b>"
+        ])
+        
+        return "\n".join(lines)
+
+@router.message(Command("history"))
+async def cmd_history(message: types.Message):
+    """Fetches and displays the weekly trend for a specific currency, or shows a selector keyboard."""
+    args = message.text.split()
+    if len(args) > 1:
+        currency = args[1].upper()
+        if currency not in CURRENCIES:
+            supported = ", ".join(CURRENCIES)
+            await message.answer(f"⚠️ <b>Unsupported currency!</b>\n\nSupported: {supported}", parse_mode="HTML")
+            return
+            
+        loading_msg = await message.answer("🔄 <i>Generating weekly trend and sparkline...</i>", parse_mode="HTML")
+        try:
+            history_text = await get_formatted_history(currency)
+            await loading_msg.delete()
+            await message.answer(history_text, parse_mode="HTML")
+        except Exception as e:
+            logger.error(f"Error serving weekly trend for {currency}: {e}")
+            await loading_msg.edit_text("⚠️ <i>Unable to retrieve historical trend at this time. Please try again.</i>", parse_mode="HTML")
+    else:
+        text = (
+            "📈 <b>FlyRates Weekly Historical Trends</b> 📈\n\n"
+            "View exchange rate performance and a visual trend sparkline over the last 7 days.\n\n"
+            "👇 <b>Select a currency below to display the weekly trend:</b>"
+        )
+        await message.answer(text, reply_markup=get_history_keyboard(), parse_mode="HTML")
+
+@router.callback_query(lambda c: c.data.startswith("hist_"))
+async def process_history_callback(callback_query: types.CallbackQuery):
+    """Processes interactive currency selections to load weekly rate history details."""
+    currency = callback_query.data.split("_")[1]
+    try:
+        history_text = await get_formatted_history(currency)
+        await callback_query.message.edit_text(
+            history_text,
+            reply_markup=get_history_keyboard(),
+            parse_mode="HTML"
+        )
+        await callback_query.answer(f"Loaded weekly trend for {currency}!")
+    except Exception as e:
+        logger.error(f"Error handling history callback for {currency}: {e}")
+        await callback_query.answer("⚠️ Could not load history details.")

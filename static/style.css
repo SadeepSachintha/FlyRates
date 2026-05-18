@@ -513,3 +513,67 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* Trend Chart Section Styling */
+.trend-section {
+    margin-top: 1rem;
+}
+
+.trend-chart-card {
+    width: 100%;
+}
+
+.chart-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+.chart-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.chart-select {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.6rem 1.25rem;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.875rem;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.chart-select:focus,
+.chart-select:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+}
+
+.chart-select option {
+    background-color: #111827;
+    color: var(--text-primary);
+}
+
+/* Responsiveness for Chart Controls */
+@media (max-width: 640px) {
+    .chart-header-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .chart-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .chart-select {
+        flex: 1;
+    }
+}
+

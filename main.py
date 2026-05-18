@@ -120,6 +120,7 @@ async def lifespan(app: FastAPI):
         commands = [
             types.BotCommand(command="start", description="Start FlyRates & subscribe to daily rates"),
             types.BotCommand(command="current", description="Fetch live LKR exchange rates list instantly"),
+            types.BotCommand(command="history", description="View weekly trends with visual sparkline graphs"),
             types.BotCommand(command="unsubscribe", description="Opt-out of daily LKR rates broadcast"),
             types.BotCommand(command="help", description="Show help guide and commands reference")
         ]
@@ -205,6 +206,40 @@ async def get_diagnostics():
         "env_info": env_info
     }
 
+@app.get("/api/history")
+async def get_rates_history(days: int = 30):
+    """Retrieve historical exchange rates for all currencies over the past N days."""
+    from db.models import ExchangeRateHistory
+    from db.session import async_session
+    from datetime import datetime, timezone, timedelta
+    
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    
+    async with async_session() as session:
+        try:
+            # Query history since cutoff, sorted by timestamp ascending
+            result = await session.execute(
+                select(ExchangeRateHistory)
+                .where(ExchangeRateHistory.timestamp >= cutoff.replace(tzinfo=None))
+                .order_by(ExchangeRateHistory.timestamp.asc())
+            )
+            records = result.scalars().all()
+            
+            # Format as: { "USD": [{"date": "2026-05-18", "rate": 300.5}, ...], "EUR": [...] }
+            history = {}
+            for rec in records:
+                cur = rec.currency
+                if cur not in history:
+                    history[cur] = []
+                history[cur].append({
+                    "date": rec.timestamp.strftime("%Y-%m-%d"),
+                    "rate": rec.rate_to_lkr
+                })
+            return history
+        except Exception as e:
+            logger.error(f"Error fetching rate history from database: {e}")
+            return {"error": "Failed to fetch rate history"}
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint required by Hugging Face Spaces."""
@@ -237,7 +272,7 @@ async def get_system_stats():
 
     # Fetch live exchange rates to LKR concurrently
     rates = {}
-    currencies = ["USD", "EUR", "GBP", "AUD", "JPY"]
+    currencies = ["USD", "EUR", "GBP", "AUD", "JPY", "AED", "SAR", "INR", "CNY", "QAR"]
     
     async def fetch_rate_safe(cur: str):
         try:

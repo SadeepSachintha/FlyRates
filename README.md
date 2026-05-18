@@ -14,12 +14,14 @@ FlyRates is an ultra-clean, high-availability Telegram bot designed for single-p
 
 ## Features ✨
 - **Premium Glassmorphic Web Dashboard:** A stunning, glassmorphic UI displaying real-time LKR exchange rates, automated conversion calculator, and active scheduler metrics.
+- **Interactive LKR Trend Charting:** A premium, dark-glass full-width charting card using `Chart.js` to render gorgeous, neon-colored bezier curves (`tension: 0.4`) and transparent glowing gradients for 7, 15, and 30-day exchange trends.
+- **Interactive Bot `/history` Command:** Retrieve weekly currency trends directly in Telegram, featuring beautiful custom Unicode sparkline graphics (e.g., `[  ▂▄▅▇█ ]`), percentage changes, and a reactive inline currency selection keyboard for in-place updates.
 - **Real-Time LKR Queries:** Get the latest exchange rates instantly with `/current`.
 - **Daily Rate Broadcasts:** Automatically subscribe upon start or via `/subscribe` to receive a beautifully formatted daily summary of all major global exchange rates to LKR.
 - **1-Tap Rate Refresh:** Tapping the inline `🔄 Refresh Rates` button updates the exchange list in-place instantly.
 - **Asynchronous Architecture:** High performance and non-blocking I/O using FastAPI and Aiogram.
 - **Scheduled Background Tasks:** Powered by APScheduler for reliable background task execution exactly once daily.
-- **Database Flexibility:** Uses SQLAlchemy (supports SQLite locally and high-performance PgBouncer-pooled Supabase PostgreSQL in production) with a single-table `users` schema.
+- **Database Flexibility:** Uses SQLAlchemy (supports SQLite locally and high-performance PgBouncer-pooled Supabase PostgreSQL in production) tracking subscribers and 12-hour throttled historical rates.
 
 ## Key-less Web-Scraping FX Service & CBSL Web Scraper 💱
 
@@ -49,6 +51,43 @@ To permanently resolve external API rate-limiting errors (`status 429`) and guar
 
 ---
 
+## LKR Historical Trends & Visual Charting Architecture 📈
+
+To support multi-day exchange rate tracking and premium charting across the dashboard and bot layers, FlyRates implements an integrated historical rates architecture:
+
+1. **Exchange Rates History Model (`ExchangeRateHistory`):**
+   - Maps `id` (Integer), `currency` (String(3) indexed), `rate_to_lkr` (Float), and UTC `timestamp` (DateTime indexed) for high-performance time-series database aggregations.
+   - Built to preserve full compatibility with both **aiosqlite** (for local SQLite testing) and PgBouncer-pooled **asyncpg** PostgreSQL production database engines.
+
+2. **Database Auto-Seeder on First Boot:**
+   - If the `exchange_rate_history` table is empty on startup, the database session automatically triggers a **15-day random-walk seed generator**.
+   - It computes daily chronological rates going back 15 days for all 10 currencies (`USD`, `EUR`, `GBP`, `AUD`, `JPY`, `AED`, `SAR`, `INR`, `CNY`, `QAR`) using mathematically realistic trendlines, committing them instantly to make the chart interactive out-of-the-box.
+
+3. **12-Hour Scraper Throttling Safeguard:**
+   - When a successful CBSL scrape occurs (e.g. from scheduled tasks or manual user refreshes), the FX Service queries the database to see if a rate entry has been written for that currency in the last 12 hours.
+   - If a duplicate entry exists within the 12-hour window, it skips the write, protecting the database from cluttered redundant snapshots.
+
+4. **REST API Historical Aggregator:**
+   - Exposes a dedicated `/api/history?days=N` endpoint.
+   - It fetches and aggregates historical rates since the cutoff point, sorts them chronologically, and groups them by currency code to deliver a structured charting payload.
+
+5. **Theme Color Mapping & Premium Aura Effects:**
+   - Each global currency is mapped to its unique neon color profile:
+     - **USD:** Cyan (`#06B6D4`)
+     - **EUR:** Purple (`#8B5CF6`)
+     - **GBP:** Pink (`#EC4899`)
+     - **AUD:** Blue (`#3B82F6`)
+     - **JPY:** Emerald (`#10B981`)
+     - **AED:** Amber (`#F59E0B`), **SAR:** Teal (`#14B8A6`), **INR:** Red (`#EF4444`), **CNY:** Rose (`#F43F5E`), and **QAR:** Indigo (`#6366F1`).
+   - The web dashboard uses these color tokens to dynamically draw curved bezier lines (`tension: 0.4`) and linear gradient transparent fills under the curve in real time.
+
+6. **Unicode Sparkline Generator:**
+   - In resource-constrained environments like Telegram chat messages, FlyRates maps float arrays into high-fidelity visual Unicode sparkline trends (e.g., `[  ▂▄▅▇█ ]`) using a math-based visual character quantizer:
+     - Characters: ` ▂▃▄▅▆▇█`
+     - Automatically normalizes the dataset between the local min/max values to draw beautiful compact visual graphs directly in text.
+
+---
+
 ## Bot Commands & Premium UX 🤖📱
 
 FlyRates features an intuitive, zero-maintenance command suite supporting direct user subscription management and visual rate checklists.
@@ -59,6 +98,8 @@ FlyRates features an intuitive, zero-maintenance command suite supporting direct
 | `/start` | Basic | Launch the bot, get the welcome menu, and register for daily updates automatically. |
 | `/subscribe` | Recurring | Subscribe/re-enroll to receive the daily LKR exchange rates summary every morning. |
 | `/current` | Rate check | Instantly displays the complete list of 10 currencies to LKR with a functional inline `🔄 Refresh Rates` callback. |
+| `/history` | Historical | Displays a reactive 10-button inline keyboard. Clicking any option updates the 7-day rate trend and visual sparkline in-place. |
+| `/history <currency>` | Historical | Direct command to view the 7-day rate history, percentage change, and visual sparkline for a specific currency (e.g. `/history USD`). |
 | `/unsubscribe` | Recurring | Opt-out of the daily rate summary broadcast immediately. |
 | `/help` | Guide | Display a comprehensive help manual. |
 
@@ -69,7 +110,7 @@ FlyRates features an intuitive, zero-maintenance command suite supporting direct
 - **Telegram Bot API:** [Aiogram 3.x](https://aiogram.dev/)
 - **Database:** SQLAlchemy, aiosqlite, asyncpg (Supabase PgBouncer optimized)
 - **Task Scheduling:** APScheduler (Configured for exactly one daily broadcast at 8:00 AM)
-- **Frontend Dashboard:** Premium Glassmorphic Web App (HTML5/Vanilla CSS/Modern JS)
+- **Frontend Dashboard:** Premium Glassmorphic Web App (HTML5/Vanilla CSS/Modern JS/Chart.js)
 - **Deployment:** Docker, Hugging Face Spaces (24/7 Webhook & Scheduler)
 
 ---

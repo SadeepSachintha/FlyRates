@@ -63,6 +63,47 @@ async def init_db():
                     # Column already exists
                     pass
                 
+        # 3. Dynamic Seeding of ExchangeRateHistory if empty
+        async with async_session() as session:
+            from sqlalchemy import select
+            from db.models import ExchangeRateHistory
+            from datetime import timedelta, timezone, datetime
+            import random
+            
+            # Check if history exists
+            result = await session.execute(select(ExchangeRateHistory.id).limit(1))
+            if not result.first():
+                logger.info("Exchange rate history table is empty. Generating 15-day random-walk seed data...")
+                base_rates = {
+                    "USD": 300.0,
+                    "EUR": 325.0,
+                    "GBP": 380.0,
+                    "AUD": 200.0,
+                    "JPY": 1.95,
+                    "AED": 81.5,
+                    "SAR": 80.0,
+                    "INR": 3.60,
+                    "CNY": 41.5,
+                    "QAR": 82.0
+                }
+                
+                now = datetime.now(timezone.utc)
+                for cur, base_val in base_rates.items():
+                    current_val = base_val
+                    for day in range(15, -1, -1):
+                        change = current_val * random.uniform(-0.012, 0.012)
+                        current_val = round(current_val + change, 4)
+                        dt = (now - timedelta(days=day)).replace(hour=8, minute=0, second=0, microsecond=0, tzinfo=None)
+                        session.add(
+                            ExchangeRateHistory(
+                                currency=cur,
+                                rate_to_lkr=current_val,
+                                timestamp=dt
+                            )
+                        )
+                await session.commit()
+                logger.info("Successfully seeded 15-day historical exchange rates.")
+                
         logger.info("Database initialized successfully.")
     except Exception as e:
         logger.error(f"Error initializing database: {e}")

@@ -122,6 +122,44 @@ class FXService:
             return entry["rate"]
         return None
 
+    async def save_historical_rates(self, rates: Dict[str, float]):
+        """Saves a dictionary of currency rates to LKR in the database history with a 12-hour throttling check."""
+        from db.session import async_session
+        from db.models import ExchangeRateHistory
+        from sqlalchemy import select, and_
+        
+        now = datetime.now(timezone.utc)
+        throttle_time = now - timedelta(hours=12)
+        
+        async with async_session() as session:
+            try:
+                for cur, rate in rates.items():
+                    # 1. Throttling Check: See if we wrote this currency in the last 12 hours
+                    stmt = select(ExchangeRateHistory.id).where(
+                        and_(
+                            ExchangeRateHistory.currency == cur,
+                            ExchangeRateHistory.timestamp >= throttle_time.replace(tzinfo=None)
+                        )
+                    ).limit(1)
+                    
+                    res = await session.execute(stmt)
+                    if res.first():
+                        logger.debug(f"History entry for {cur} is throttled (written in last 12 hours). Skipping database record.")
+                        continue
+                        
+                    # 2. If not throttled, write to DB
+                    history_entry = ExchangeRateHistory(
+                        currency=cur,
+                        rate_to_lkr=rate,
+                        timestamp=now.replace(tzinfo=None)
+                    )
+                    session.add(history_entry)
+                    logger.info(f"Recorded database rate history: {cur} = {rate} LKR")
+                
+                await session.commit()
+            except Exception as e:
+                logger.error(f"Failed to save exchange rate history to database: {e}")
+
     async def fetch_cbsl_rates(self) -> bool:
         """
         Scrapes LKR exchange rates directly from the official Central Bank of Sri Lanka website.
@@ -183,6 +221,7 @@ class FXService:
                                 parser.feed(html_text)
                                 
                                 has_parsed_any = False
+                                scraped_rates = {}
                                 for table in parser.tables:
                                     cleaned_rows = []
                                     for row in table:
@@ -205,6 +244,7 @@ class FXService:
                                                 self.update_cache_entry(cur_code, "LKR", rate_val)
                                                 # Also calculate LKR_base reciprocal
                                                 self.update_cache_entry("LKR", cur_code, 1.0 / rate_val if rate_val > 0 else 0.0)
+                                                scraped_rates[cur_code] = rate_val
                                                 has_parsed_any = True
                                             except ValueError:
                                                 pass
@@ -212,6 +252,7 @@ class FXService:
                                 if has_parsed_any:
                                     logger.info(f"Successfully scraped CBSL rates for LKR on {date_str}.")
                                     self.save_cache()
+                                    await self.save_historical_rates(scraped_rates)
                                     return True
                             else:
                                 logger.warning(f"CBSL scrape post failed with status: {response.status}")

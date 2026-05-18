@@ -4,7 +4,12 @@ let cachedRates = {
     EUR: 0,
     GBP: 0,
     AUD: 0,
-    JPY: 0
+    JPY: 0,
+    AED: 0,
+    SAR: 0,
+    INR: 0,
+    CNY: 0,
+    QAR: 0
 };
 
 // Formats number values with commas
@@ -123,8 +128,16 @@ function calculateConversion() {
             prefixEl.textContent = '£';
         } else if (fromCur === 'EUR') {
             prefixEl.textContent = '€';
-        } else if (fromCur === 'JPY') {
+        } else if (fromCur === 'JPY' || fromCur === 'CNY') {
             prefixEl.textContent = '¥';
+        } else if (fromCur === 'INR') {
+            prefixEl.textContent = '₹';
+        } else if (fromCur === 'AED') {
+            prefixEl.textContent = 'DH';
+        } else if (fromCur === 'SAR') {
+            prefixEl.textContent = 'SR';
+        } else if (fromCur === 'QAR') {
+            prefixEl.textContent = 'QR';
         } else {
             prefixEl.textContent = '';
         }
@@ -139,6 +152,128 @@ function calculateConversion() {
     resultOutput.innerHTML = `${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span class="currency-tag">LKR</span>`;
 }
 
+// Chart.js Trends Visualization Logic
+let trendsChart = null;
+
+const currencyColors = {
+    USD: { border: '#06B6D4', glow: 'rgba(6, 182, 212, 0.25)', fill: 'rgba(6, 182, 212, 0.05)' },
+    EUR: { border: '#8B5CF6', glow: 'rgba(139, 92, 246, 0.25)', fill: 'rgba(139, 92, 246, 0.05)' },
+    GBP: { border: '#EC4899', glow: 'rgba(236, 72, 153, 0.25)', fill: 'rgba(236, 72, 153, 0.05)' },
+    AUD: { border: '#3B82F6', glow: 'rgba(59, 130, 246, 0.25)', fill: 'rgba(59, 130, 246, 0.05)' },
+    JPY: { border: '#10B981', glow: 'rgba(16, 185, 129, 0.25)', fill: 'rgba(16, 185, 129, 0.05)' },
+    AED: { border: '#F59E0B', glow: 'rgba(245, 158, 11, 0.25)', fill: 'rgba(245, 158, 11, 0.05)' },
+    SAR: { border: '#14B8A6', glow: 'rgba(20, 184, 166, 0.25)', fill: 'rgba(20, 184, 166, 0.05)' },
+    INR: { border: '#EF4444', glow: 'rgba(239, 68, 68, 0.25)', fill: 'rgba(239, 68, 68, 0.05)' },
+    CNY: { border: '#F43F5E', glow: 'rgba(244, 63, 94, 0.25)', fill: 'rgba(244, 63, 94, 0.05)' },
+    QAR: { border: '#6366F1', glow: 'rgba(99, 102, 241, 0.25)', fill: 'rgba(99, 102, 241, 0.05)' }
+};
+
+async function updateTrendsChart() {
+    const currencySelect = document.getElementById('chart-currency-select');
+    const daysSelect = document.getElementById('chart-days-select');
+    const canvas = document.getElementById('trends-chart');
+    if (!currencySelect || !daysSelect || !canvas) return;
+    
+    const currency = currencySelect.value;
+    const days = parseInt(daysSelect.value) || 30;
+    
+    try {
+        const response = await fetch(`/api/history?days=${days}`);
+        if (!response.ok) throw new Error('API down');
+        
+        const historyData = await response.json();
+        const records = historyData[currency] || [];
+        
+        const labels = records.map(r => r.date);
+        const dataPoints = records.map(r => r.rate);
+        
+        const theme = currencyColors[currency] || currencyColors.USD;
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Dynamic gradient area under line
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, theme.glow);
+        gradient.addColorStop(1, 'rgba(11, 15, 25, 0)');
+        
+        const chartData = {
+            labels: labels,
+            datasets: [{
+                label: `${currency} to LKR`,
+                data: dataPoints,
+                borderColor: theme.border,
+                borderWidth: 3,
+                backgroundColor: gradient,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: theme.border,
+                pointBorderColor: '#FFFFFF',
+                pointBorderWidth: 1.5,
+                pointRadius: labels.length > 15 ? 2.5 : 4,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: theme.border,
+                pointHoverBorderColor: '#FFFFFF',
+                pointHoverBorderWidth: 2
+            }]
+        };
+        
+        if (trendsChart) {
+            trendsChart.data = chartData;
+            trendsChart.update();
+        } else {
+            trendsChart = new Chart(ctx, {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                            titleColor: '#F3F4F6',
+                            bodyColor: '#F3F4F6',
+                            borderColor: 'rgba(255, 255, 255, 0.12)',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `1 ${currency} = ${context.parsed.y.toFixed(2)} LKR`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                            ticks: {
+                                color: '#9CA3AF',
+                                font: { family: 'Plus Jakarta Sans', size: 11 },
+                                maxRotation: 45,
+                                autoSkip: true,
+                                maxTicksLimit: 10
+                            }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                            ticks: {
+                                color: '#9CA3AF',
+                                font: { family: 'Plus Jakarta Sans', size: 11 },
+                                callback: function(value) {
+                                    return value.toFixed(1) + ' LKR';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error drawing chart:', error);
+    }
+}
+
 // Event Listeners initialization
 document.addEventListener('DOMContentLoaded', () => {
     // Initial fetch
@@ -150,6 +285,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (amountInput) amountInput.addEventListener('input', calculateConversion);
     if (currencySelect) currencySelect.addEventListener('change', calculateConversion);
+    
+    // Setup Chart dynamic bindings
+    updateTrendsChart();
+    
+    const chartCurrency = document.getElementById('chart-currency-select');
+    const chartDays = document.getElementById('chart-days-select');
+    if (chartCurrency) chartCurrency.addEventListener('change', updateTrendsChart);
+    if (chartDays) chartDays.addEventListener('change', updateTrendsChart);
     
     // Auto-update dashboard metrics and rates every 60 seconds
     setInterval(fetchStats, 60000);
