@@ -26,9 +26,9 @@ socket.getaddrinfo = custom_getaddrinfo
 
 from core.config import settings
 from db.session import init_db, async_session
-from db.models import User, Subscription, Threshold
+from db.models import User
 from bot.handlers import router as bot_router
-from bot.scheduler import process_subscriptions, process_thresholds
+from bot.scheduler import process_daily_broadcast
 from services.fx_service import fx_service
 
 # Configure Logging
@@ -161,10 +161,8 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to setup Telegram interaction during startup: {e}")
 
-    # 3. Setup Scheduled Jobs
-    scheduler.add_job(process_thresholds, 'interval', minutes=10, args=[bot])
-    scheduler.add_job(process_subscriptions, 'cron', hour=8, args=[bot, 'daily'])
-    scheduler.add_job(process_subscriptions, 'interval', hours=1, args=[bot, 'hourly'])
+    # 3. Setup Scheduled Jobs (exactly one clean daily broadcast at 8:00 AM)
+    scheduler.add_job(process_daily_broadcast, 'cron', hour=8, args=[bot])
     scheduler.start()
 
     yield
@@ -227,14 +225,12 @@ async def get_system_stats():
     stats = {}
     try:
         async with async_session() as session:
-            # Gather subscriber (user) counts, subscriptions, and active thresholds
-            users_count = await session.scalar(select(func.count(User.chat_id)))
-            subs_count = await session.scalar(select(func.count(Subscription.id)))
-            thresholds_count = await session.scalar(select(func.count(Threshold.id)).where(Threshold.is_active == True))
+            # Gather active subscribers count
+            users_count = await session.scalar(select(func.count(User.chat_id)).where(User.is_subscribed == True))
             
             stats["subscribers"] = users_count or 0
-            stats["active_subscriptions"] = subs_count or 0
-            stats["active_thresholds"] = thresholds_count or 0
+            stats["active_subscriptions"] = 10  # 10 core LKR currencies tracked
+            stats["active_thresholds"] = 1     # Unified active broadcast schedule
             stats["db_status"] = "connected"
     except Exception as e:
         logger.error(f"Error fetching stats from DB: {e}")

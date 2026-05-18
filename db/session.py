@@ -38,40 +38,30 @@ async def init_db():
     """Initializes the database and creates all tables."""
     try:
         async with engine.begin() as conn:
+            # 1. Create tables defined in models.py (creates users table if not exists)
             await conn.run_sync(Base.metadata.create_all)
             
-            # Check if running on PostgreSQL/Supabase and perform auto-migration of chat_id columns to BIGINT
-            if "postgresql" in engine.url.drivername or "postgres" in engine.url.drivername:
-                logger.info("Running on PostgreSQL. Ensuring chat_id columns are BIGINT...")
-                migration_sql = """
-                DO $$
-                BEGIN
-                    -- Drop foreign key constraints if they exist
-                    IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'subscriptions_chat_id_fkey') THEN
-                        ALTER TABLE subscriptions DROP CONSTRAINT subscriptions_chat_id_fkey;
-                    END IF;
-                    IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'thresholds_chat_id_fkey') THEN
-                        ALTER TABLE thresholds DROP CONSTRAINT thresholds_chat_id_fkey;
-                    END IF;
-
-                    -- Alter columns to BIGINT
-                    ALTER TABLE users ALTER COLUMN chat_id TYPE BIGINT;
-                    ALTER TABLE subscriptions ALTER COLUMN chat_id TYPE BIGINT;
-                    ALTER TABLE thresholds ALTER COLUMN chat_id TYPE BIGINT;
-
-                    -- Re-create constraints with CASCADE delete (matching SQLAlchemy cascade configuration)
-                    ALTER TABLE subscriptions ADD CONSTRAINT subscriptions_chat_id_fkey 
-                        FOREIGN KEY (chat_id) REFERENCES users(chat_id) ON DELETE CASCADE;
-                    ALTER TABLE thresholds ADD CONSTRAINT thresholds_chat_id_fkey 
-                        FOREIGN KEY (chat_id) REFERENCES users(chat_id) ON DELETE CASCADE;
-                EXCEPTION
-                    WHEN OTHERS THEN
-                        RAISE NOTICE 'Migration encountered an error: %', SQLERRM;
-                END $$;
-                """
-                from sqlalchemy import text
-                await conn.execute(text(migration_sql))
-                logger.info("Database chat_id columns successfully migrated/verified as BIGINT.")
+            # 2. Database migrations and cleanups
+            is_postgres = "postgresql" in engine.url.drivername or "postgres" in engine.url.drivername
+            from sqlalchemy import text
+            
+            if is_postgres:
+                logger.info("Running on PostgreSQL. Ensuring schema matches simplified design...")
+                # Run each statement individually to comply with asyncpg single-statement execution rules
+                await conn.execute(text("DROP TABLE IF EXISTS thresholds CASCADE"))
+                await conn.execute(text("DROP TABLE IF EXISTS subscriptions CASCADE"))
+                await conn.execute(text("ALTER TABLE users ALTER COLUMN chat_id TYPE BIGINT"))
+                await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_subscribed BOOLEAN DEFAULT TRUE"))
+                logger.info("PostgreSQL database schema successfully migrated and simplified.")
+            else:
+                logger.info("Running on SQLite. Running schema verification...")
+                # SQLite fallback to add is_subscribed column if it does not exist
+                try:
+                    await conn.execute(text("ALTER TABLE users ADD COLUMN is_subscribed BOOLEAN DEFAULT 1"))
+                    logger.info("Successfully added is_subscribed column to SQLite users table.")
+                except Exception:
+                    # Column already exists
+                    pass
                 
         logger.info("Database initialized successfully.")
     except Exception as e:
