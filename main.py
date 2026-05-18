@@ -35,6 +35,25 @@ from services.fx_service import fx_service
 logging.basicConfig(level=getattr(logging, settings.log_level))
 logger = logging.getLogger(__name__)
 
+# InMemoryLogHandler to store logs for web diagnostics
+class InMemoryLogHandler(logging.Handler):
+    def __init__(self, limit=300):
+        super().__init__()
+        self.limit = limit
+        self.records = []
+
+    def emit(self, record):
+        try:
+            self.records.append(self.format(record))
+            if len(self.records) > self.limit:
+                self.records.pop(0)
+        except Exception:
+            pass
+
+in_memory_logs = InMemoryLogHandler()
+in_memory_logs.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+logging.getLogger().addHandler(in_memory_logs)
+
 # Global diagnostic results storage
 diagnostic_results = []
 
@@ -174,6 +193,11 @@ async def get_diagnostics():
 async def health_check():
     """Health check endpoint required by Hugging Face Spaces."""
     return {"status": "ok"}
+
+@app.get("/api/logs")
+async def get_logs():
+    """Retrieve in-memory logs for diagnostics."""
+    return {"logs": in_memory_logs.records}
 
 @app.get("/api/stats")
 async def get_system_stats():
