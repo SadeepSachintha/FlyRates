@@ -4,6 +4,7 @@ from core.config import settings
 from db.models import Base
 
 import ssl
+from uuid import uuid4
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,7 @@ if "supabase" in settings.database_url or "postgres" in settings.database_url or
     ssl_context.verify_mode = ssl.CERT_NONE
     connect_args["ssl"] = ssl_context
     connect_args["statement_cache_size"] = 0
-    connect_args["prepared_statement_cache_size"] = 0
+    connect_args["prepared_statement_name_func"] = lambda: f"__asyncpg_{uuid4().hex}__"
 
 # Initialize the async engine
 engine = create_async_engine(
@@ -22,8 +23,7 @@ engine = create_async_engine(
     echo=(settings.log_level == "DEBUG"),
     future=True,
     pool_pre_ping=True,
-    connect_args=connect_args,
-    prepared_statement_cache_size=0
+    connect_args=connect_args
 )
 
 # Create an async session factory
