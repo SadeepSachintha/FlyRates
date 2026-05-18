@@ -171,9 +171,7 @@ async def lifespan(app: FastAPI):
 
     # Shutdown logic
     scheduler.shutdown()
-    if settings.webhook_url:
-        await bot.delete_webhook()
-    else:
+    if not settings.webhook_url:
         if hasattr(app.state, "polling_task"):
             app.state.polling_task.cancel()
             try:
