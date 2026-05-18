@@ -118,14 +118,10 @@ async def lifespan(app: FastAPI):
     # Register Bot Menu Commands
     try:
         commands = [
-            types.BotCommand(command="start", description="Start FlyRates & get welcome message"),
-            types.BotCommand(command="current", description="Check live exchange rate (interactive/direct)"),
-            types.BotCommand(command="subscribe", description="Set up periodic rate updates"),
-            types.BotCommand(command="threshold", description="Configure custom price alert"),
-            types.BotCommand(command="mysubs", description="View & manage active subscriptions/alerts"),
-            types.BotCommand(command="unsubscribe", description="Remove active subscription"),
-            types.BotCommand(command="delthreshold", description="Remove active threshold alert"),
-            types.BotCommand(command="help", description="Show detailed guide and examples")
+            types.BotCommand(command="start", description="Start FlyRates & subscribe to daily rates"),
+            types.BotCommand(command="current", description="Fetch live LKR exchange rates list instantly"),
+            types.BotCommand(command="unsubscribe", description="Opt-out of daily LKR rates broadcast"),
+            types.BotCommand(command="help", description="Show help guide and commands reference")
         ]
         await bot.set_my_commands(commands)
         logger.info("Bot commands registered successfully.")
