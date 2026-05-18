@@ -53,6 +53,10 @@ class InMemoryLogHandler(logging.Handler):
 in_memory_logs = InMemoryLogHandler()
 in_memory_logs.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 logging.getLogger().addHandler(in_memory_logs)
+logging.getLogger("uvicorn").addHandler(in_memory_logs)
+logging.getLogger("uvicorn.error").addHandler(in_memory_logs)
+logging.getLogger("uvicorn.access").addHandler(in_memory_logs)
+logging.getLogger("aiogram").addHandler(in_memory_logs)
 
 # Global diagnostic results storage
 diagnostic_results = []
@@ -169,8 +173,14 @@ app = FastAPI(lifespan=lifespan)
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
     """Endpoint for Telegram to send updates to."""
-    update = types.Update.model_validate(await request.json(), context={"bot": bot})
-    await dp.feed_update(bot, update)
+    try:
+        payload = await request.json()
+        logger.info(f"Incoming webhook payload: {payload}")
+        update = types.Update.model_validate(payload, context={"bot": bot})
+        await dp.feed_update(bot, update)
+    except Exception as e:
+        logger.exception("CRITICAL: Error processing webhook update:")
+        raise e
     return Response(status_code=200)
 
 @app.get("/api/diagnostics")
