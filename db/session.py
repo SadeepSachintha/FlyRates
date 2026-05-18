@@ -75,16 +75,16 @@ async def init_db():
             if not result.first():
                 logger.info("Exchange rate history table is empty. Generating 15-day random-walk seed data...")
                 base_rates = {
-                    "USD": 300.0,
-                    "EUR": 325.0,
-                    "GBP": 380.0,
-                    "AUD": 200.0,
-                    "JPY": 1.95,
-                    "AED": 81.5,
-                    "SAR": 80.0,
-                    "INR": 3.60,
-                    "CNY": 41.5,
-                    "QAR": 82.0
+                    "USD": 325.0,
+                    "EUR": 375.0,
+                    "GBP": 430.0,
+                    "AUD": 230.0,
+                    "JPY": 2.05,
+                    "AED": 88.5,
+                    "SAR": 86.5,
+                    "INR": 3.40,
+                    "CNY": 47.5,
+                    "QAR": 89.0
                 }
                 
                 now = datetime.now(timezone.utc)
