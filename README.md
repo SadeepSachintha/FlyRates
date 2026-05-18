@@ -114,13 +114,24 @@ docker run -p 8000:8000 --env-file .env flyrates-bot
 This repository includes a GitHub Actions workflow (`.github/workflows/huggingface_sync.yml`) that automatically syncs the `main` branch to a Hugging Face Space.
 Make sure to set the `HF_TOKEN` secret in your GitHub repository for the CI/CD pipeline to work correctly.
 
-### Hugging Face Deployment Optimizations ⚙️
+### Hugging Face Deployment & Stability Optimizations ⚙️
 
-To ensure high-availability and 100% uptime within Hugging Face Spaces, the following environment optimizations are built into the core codebase:
+To ensure high-availability, zero-maintenance, and 100% uptime within Hugging Face Spaces, the following environment optimizations are built into the core codebase:
 
 1. **Forced IPv4 Routing (Telegram API & FX Service):**
    - **The Problem:** Hugging Face Spaces defaults to IPv6-first DNS/routing, but `api.telegram.org` is IPv4-only (it lacks `AAAA` records). Because the default fallback fails on the platform's networking stack, connections fail during startup with a `ClientConnectorError` (`Network is unreachable`).
    - **The Solution:** The bot client uses a custom `IPv4AiohttpSession` subclass that injects `family=socket.AF_INET` into the underlying `aiohttp.TCPConnector`. A matching IPv4 constraint is configured on the `ClientSession` inside [services/fx_service.py](file:///d:/xampp/htdocs/FlyRates/services/fx_service.py). This bypasses the platform's IPv6 constraints for 100% successful external API routing.
 
-2. **Supabase Database Pooling:**
-   - When deploying with Supabase PostgreSQL, ensure you use the transaction-based connection pooler URL (PgBouncer) on **port 6543**. This prevents connection leakage/exhaustion from concurrent FastAPI server routing and scheduled background intervals.
+2. **Supabase Database PgBouncer Transaction Pooling Compatibility:**
+   - **The Problem:** Connecting to Supabase's transaction pooler (PgBouncer on port `6543`) with SQLAlchemy/asyncpg can throw `DuplicatePreparedStatementError` or `InvalidSQLStatementNameError` because PgBouncer does not support reusing session-based prepared statement caches.
+   - **The Solution:** Inside [db/session.py](file:///d:/xampp/htdocs/FlyRates/db/session.py), the engine uses `poolclass=NullPool` to completely delegate connection pooling to PgBouncer, and sets `prepared_statement_cache_size=0` and `statement_cache_size=0` in `connect_args`. This completely disables the prepared statement cache in both `asyncpg` and SQLAlchemy, offering seamless database reliability.
+
+3. **In-Memory Diagnostic Log Viewer:**
+   - Exposes a secure HTTP GET `/api/logs` endpoint. This buffers the last 300 logs in-memory across the root logger, `uvicorn`, and `aiogram`, allowing developers to inspect real-time container startup and webhook transaction traces directly in their web browser.
+
+4. **Hugging Face Container Sleep State (Heartbeat Ping):**
+   - **The Problem:** Hugging Face free-tier containers automatically sleep after 48 hours of inactivity (no web interface visits). Direct Telegram webhook POST requests **do not wake up** a sleeping space, causing the bot to go unresponsive.
+   - **The Solution:** Set up a free heartbeat ping on **[cron-job.org](https://cron-job.org/)** or **[UptimeRobot](https://uptimerobot.com/)** pointing to `https://<your-space-subdomain>.hf.space/health` running **every 12 hours**. This simple HTTP GET ping keeps the container permanently awake and the bot active 24/7.
+
+5. **Local Webhook Protection Safeguard:**
+   - Running the bot locally in long polling mode will check the active webhook on Telegram. To prevent local tests from accidentally deleting and disrupting the production bot's active webhook, startup long-polling is automatically skipped unless `delete_webhook_on_local: bool = True` is explicitly enabled or configured in your local environment settings.
