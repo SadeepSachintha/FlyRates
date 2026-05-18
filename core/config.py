@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     fx_api_key: str = ""
     database_url: str = "sqlite+aiosqlite:///./flyrates.db"
     log_level: str = "INFO"
+    delete_webhook_on_local: bool = False
 
     @field_validator("database_url", mode="before")
     @classmethod

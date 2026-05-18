@@ -140,10 +140,24 @@ async def lifespan(app: FastAPI):
                 await bot.set_webhook(url=f"{settings.webhook_url}/webhook")
                 logger.info(f"Webhook set to {settings.webhook_url}/webhook")
         else:
-            logger.info("WEBHOOK_URL not set. Deleting webhook and starting Bot in Long Polling mode...")
-            await bot.delete_webhook(drop_pending_updates=False)
-            polling_task = asyncio.create_task(dp.start_polling(bot))
-            app.state.polling_task = polling_task
+            logger.info("WEBHOOK_URL not set. Running in local mode. Checking active webhook...")
+            webhook_info = await bot.get_webhook_info()
+            if webhook_info.url:
+                if settings.delete_webhook_on_local:
+                    logger.warning(f"Active webhook detected at '{webhook_info.url}'. Deleting it as delete_webhook_on_local is enabled...")
+                    await bot.delete_webhook(drop_pending_updates=False)
+                    polling_task = asyncio.create_task(dp.start_polling(bot))
+                    app.state.polling_task = polling_task
+                else:
+                    logger.warning(
+                        f"Active webhook detected at '{webhook_info.url}'. "
+                        "To protect the production bot, local long polling will NOT delete it, and polling is skipped. "
+                        "If you wish to test locally and delete the webhook, set DELETE_WEBHOOK_ON_LOCAL=True in your local .env file."
+                    )
+            else:
+                logger.info("No active webhook. Starting Bot in Long Polling mode...")
+                polling_task = asyncio.create_task(dp.start_polling(bot))
+                app.state.polling_task = polling_task
     except Exception as e:
         logger.error(f"Failed to setup Telegram interaction during startup: {e}")
 
