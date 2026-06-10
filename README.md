@@ -9,6 +9,7 @@ pinned: false
 ---
 
 # FlyRates - Telegram Exchange Rate Bot 💱
+### A premium product of [SS Labz](https://github.com/SadeepSachintha)
 
 FlyRates is an ultra-clean, high-availability Telegram bot designed for single-purpose, highly reliable daily currency exchange rate updates against the Sri Lankan Rupee (LKR). Built with a state-free, asynchronous architecture, it efficiently handles on-demand queries, automated daily list broadcasts, and premium web analytics.
 

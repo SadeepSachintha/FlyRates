@@ -29,6 +29,7 @@ def format_rates_list(rates: dict) -> str:
     """Formats the rates dictionary into a beautifully styled HTML message."""
     lines = [
         "🌍 <b>Daily LKR Exchange Rates</b> 🌍",
+        "<i>Brought to you by SS Labz</i>",
         f"📅 <i>Date: {datetime.now().strftime('%Y-%m-%d')}</i>",
         ""
     ]

@@ -39,7 +39,8 @@ async def cmd_start(message: types.Message):
             session.add(user)
             await session.commit()
             text = (
-                "🌍 <b>Welcome to FlyRates!</b> 🌍\n\n"
+                "🌍 <b>Welcome to FlyRates!</b> 🌍\n"
+                "<i>A premium product of SS Labz</i>\n\n"
                 "You have been successfully registered and subscribed to receive a <b>daily LKR exchange rate list</b>!\n\n"
                 "Every morning at 8:00 AM UTC, you will receive a beautifully formatted list of all major currencies to Sri Lankan Rupee (LKR).\n\n"
                 "🛠️ <b>Quick Commands:</b>\n"
@@ -52,7 +53,8 @@ async def cmd_start(message: types.Message):
                 user.is_subscribed = True
                 await session.commit()
                 text = (
-                    "🔄 <b>Welcome Back to FlyRates!</b>\n\n"
+                    "🔄 <b>Welcome Back to FlyRates!</b>\n"
+                    "<i>A premium product of SS Labz</i>\n\n"
                     "Your subscription to the <b>daily exchange rate list updates</b> has been successfully reactivated!\n\n"
                     "🛠️ <b>Quick Commands:</b>\n"
                     "• /current - Get the latest rate list instantly\n"
@@ -154,7 +156,8 @@ async def process_refresh_rates(callback_query: types.CallbackQuery):
 async def cmd_help(message: types.Message):
     """Displays a clean help manual for the bot."""
     text = (
-        "📚 <b>FlyRates Bot Help Guide</b> 📚\n\n"
+        "📚 <b>FlyRates Bot Help Guide</b> 📚\n"
+        "<i>A premium product of SS Labz</i>\n\n"
         "FlyRates is a single-purpose, high-availability exchange rate bot that sends a <b>daily summary of major global currencies converted to Sri Lankan Rupee (LKR)</b>.\n\n"
         "🛠️ <b>Available Commands:</b>\n"
         "• /subscribe - Subscribe to daily rate list updates\n"
@@ -269,7 +272,8 @@ async def cmd_history(message: types.Message):
             await loading_msg.edit_text("⚠️ <i>Unable to retrieve historical trend at this time. Please try again.</i>", parse_mode="HTML")
     else:
         text = (
-            "📈 <b>FlyRates Weekly Historical Trends</b> 📈\n\n"
+            "📈 <b>FlyRates Weekly Historical Trends</b> 📈\n"
+            "<i>Brought to you by SS Labz</i>\n\n"
             "View exchange rate performance and a visual trend sparkline over the last 7 days.\n\n"
             "👇 <b>Select a currency below to display the weekly trend:</b>"
         )
